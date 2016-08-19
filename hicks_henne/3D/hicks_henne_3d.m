@@ -7,16 +7,35 @@ clear all;
 close all;
 clc;
 format long;
+panels = 3;
+hh = 5;
+t_b = 4;
 load airfoils/oneraup.txt
 load airfoils/oneradown.txt
+load dp/dispx.txt
+load dp/dispy.txt
+load dp/dp.txt
+load dp/scale.txt
+load dp/twist.txt
 ubase = oneraup(:,2);
 xu = oneraup(:,1);
 lbase = oneradown(:,2);
 xl = oneradown(:,1);
+dispx = dispx(:,1);
+dispy = dispy(:,1);
+scale = scale(:,1);
+twistnew = twist(:,1);
+dpas = dp(:,1);
+dpbs = dp(:,2);
+for i = 1:panels
+    for j = 1:hh
+        dpa(i,j) = dpas((i-1)*hh + j);
+        dpb(i,j) = dpbs((i-1)*hh + j);
+    end
+end
 
-panels = 3;
-hh = 5;
-t_b = 4;
+
+
 ypanelpos = zeros(panels,1);
 xpanelpos = zeros(panels,1);
 chordlen = zeros(panels,1);
@@ -29,9 +48,6 @@ xlbasepanel = zeros(panels,size(lbase,1));
 xunewpanel = zeros(panels,size(ubase,1));
 xlnewpanel = zeros(panels,size(lbase,1));
 twist = zeros(panels,1);
-twist(1) = 10;
-twist(2) = 5;
-twist(3) = 2;
 
 
 span = 1196.3;
@@ -44,14 +60,6 @@ sweep = sweep*pi/180;
 leangle = leangle*pi/180;
 teangle = teangle*pi/180;
 ypanelpos = 0:span/(panels-1):span;
-dpa = zeros(panels,hh);
-dpb = zeros(panels,hh);
-dpa(1,1) = 0.1;
-dpa(2,1) = 0.1;
-dpa(3,1) = 0.1;
-dpb(1,1) = -0.1;
-dpb(2,1) = -0.1;
-dpb(3,1) = -0.1;
 
 for i = 1:panels
     h = 1/(hh+1);
@@ -128,24 +136,26 @@ for i = 1:panels
     end
     
     %Scaling
-    unewpanel(i,:) = chordlen(i).*unewpanel(i,:);
-    lnewpanel(i,:) = chordlen(i).*lnewpanel(i,:);
-    xunewpanel(i,:) = chordlen(i).*xunewpanel(i,:);
-    xlnewpanel(i,:) = chordlen(i).*xlnewpanel(i,:);
+    unewpanel(i,:) = scale(i).*unewpanel(i,:);
+    lnewpanel(i,:) = scale(i).*lnewpanel(i,:);
+    xunewpanel(i,:) = scale(i).*xunewpanel(i,:);
+    xlnewpanel(i,:) = scale(i).*xlnewpanel(i,:);
     
     %Translating
-    xunewpanel(i,:) = xunewpanel(i,:) - (tspan-ypanelpos(i))/tan(leangle);
-    xlnewpanel(i,:) = xlnewpanel(i,:) - (tspan-ypanelpos(i))/tan(leangle);
+    xunewpanel(i,:) = xunewpanel(i,:) - dispx(i);
+    xlnewpanel(i,:) = xlnewpanel(i,:) - dispx(i);
+    unewpanel(i,:) = unewpanel(i,:) + dispy(i);
+    lnewpanel(i,:) = lnewpanel(i,:) + dispy(i);
     
     %twisting
-    xunewpanel(i,:) = (xunewpanel(i,:) - xunewpanel(i,size(ubase,1)))*cos(twist(i)*pi/180) + ...
-        (unewpanel(i,:) - unewpanel(i,size(ubase,1)))*sin(twist(i)*pi/180) + xunewpanel(i,size(ubase,1));
-    unewpanel(i,:) = -(xunewpanel(i,:) - xunewpanel(i,size(ubase,1)))*sin(twist(i)*pi/180) + ...
-        (unewpanel(i,:) - unewpanel(i,size(ubase,1)))*cos(twist(i)*pi/180) + unewpanel(i,size(ubase,1));
-    xlnewpanel(i,:) = (xlnewpanel(i,:) - xlnewpanel(i,size(lbase,1)))*cos(twist(i)*pi/180) + ...
-        (lnewpanel(i,:) - lnewpanel(i,size(lbase,1)))*sin(twist(i)*pi/180) + xlnewpanel(i,size(ubase,1));
-    lnewpanel(i,:) = -(xlnewpanel(i,:) - xlnewpanel(i,size(lbase,1)))*sin(twist(i)*pi/180) + ...
-        (lnewpanel(i,:) - lnewpanel(i,size(lbase,1)))*cos(twist(i)*pi/180) + lnewpanel(i,size(ubase,1));
+    xunewpanel(i,:) = (xunewpanel(i,:) - xunewpanel(i,size(ubase,1)))*cos(twistnew(i)*pi/180) + ...
+        (unewpanel(i,:) - unewpanel(i,size(ubase,1)))*sin(twistnew(i)*pi/180) + xunewpanel(i,size(ubase,1));
+    unewpanel(i,:) = -(xunewpanel(i,:) - xunewpanel(i,size(ubase,1)))*sin(twistnew(i)*pi/180) + ...
+        (unewpanel(i,:) - unewpanel(i,size(ubase,1)))*cos(twistnew(i)*pi/180) + unewpanel(i,size(ubase,1));
+    xlnewpanel(i,:) = (xlnewpanel(i,:) - xlnewpanel(i,size(lbase,1)))*cos(twistnew(i)*pi/180) + ...
+        (lnewpanel(i,:) - lnewpanel(i,size(lbase,1)))*sin(twistnew(i)*pi/180) + xlnewpanel(i,size(ubase,1));
+    lnewpanel(i,:) = -(xlnewpanel(i,:) - xlnewpanel(i,size(lbase,1)))*sin(twistnew(i)*pi/180) + ...
+        (lnewpanel(i,:) - lnewpanel(i,size(lbase,1)))*cos(twistnew(i)*pi/180) + lnewpanel(i,size(ubase,1));
     
     figure(2);
     hold on;
