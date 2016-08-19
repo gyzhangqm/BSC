@@ -7,9 +7,19 @@ clear all;
 close all;
 clc;
 format long;
+
+% Baseline Config Parameters Onera M6
 panels = 3;
 hh = 5;
 t_b = 4;
+span = 1196.3;
+tspan = 2734.5;
+xspan = 1578.7;
+sweep = 26.7*pi/180;
+leangle = 60*pi/180;
+teangle = 74.219120*pi/180;
+% Baseline Config Parameters Onera M6
+
 load airfoils/oneraup.txt
 load airfoils/oneradown.txt
 load dp/dispx.txt
@@ -21,6 +31,30 @@ ubase = oneraup(:,2);
 xu = oneraup(:,1);
 lbase = oneradown(:,2);
 xl = oneradown(:,1);
+
+
+% Var Initialisations
+%ypanelpos = zeros(panels,1);
+xpanelpos = zeros(panels,1);
+chordlen = zeros(panels,1);
+ubasepanel = zeros(panels,size(ubase,1));
+lbasepanel = zeros(panels,size(lbase,1));
+unewpanel = zeros(panels,size(ubase,1));
+lnewpanel = zeros(panels,size(lbase,1));
+xubasepanel = zeros(panels,size(ubase,1));
+xlbasepanel = zeros(panels,size(lbase,1));
+xunewpanel = zeros(panels,size(ubase,1));
+xlnewpanel = zeros(panels,size(lbase,1));
+dpa = zeros(panels,hh);
+dpb = zeros(panels,hh);
+twist = zeros(panels,1);
+ypanelpos = 0:span/(panels-1):span;
+h = 1/(hh+1);
+bump_pos = 0+h:h:1-h;
+% Var Initialisations
+
+
+% Reading Design parameters from dp folder
 dispx = dispx(:,1);
 dispy = dispy(:,1);
 scale = scale(:,1);
@@ -33,49 +67,22 @@ for i = 1:panels
         dpb(i,j) = dpbs((i-1)*hh + j);
     end
 end
+% Reading Design parameters from dp folder
 
-
-
-ypanelpos = zeros(panels,1);
-xpanelpos = zeros(panels,1);
-chordlen = zeros(panels,1);
-ubasepanel = zeros(panels,size(ubase,1));
-lbasepanel = zeros(panels,size(lbase,1));
-unewpanel = zeros(panels,size(ubase,1));
-lnewpanel = zeros(panels,size(lbase,1));
-xubasepanel = zeros(panels,size(ubase,1));
-xlbasepanel = zeros(panels,size(lbase,1));
-xunewpanel = zeros(panels,size(ubase,1));
-xlnewpanel = zeros(panels,size(lbase,1));
-twist = zeros(panels,1);
-
-
-span = 1196.3;
-tspan = 2734.5;
-xspan = 1578.7;
-sweep = 26.7;
-leangle = 60;
-teangle = 74.219120;
-sweep = sweep*pi/180;
-leangle = leangle*pi/180;
-teangle = teangle*pi/180;
-ypanelpos = 0:span/(panels-1):span;
 
 for i = 1:panels
-    h = 1/(hh+1);
-    bump_pos = 0+h:h:1-h;
-    
+    % Baseline Config Generation start
     xpanelpos(i) = (tspan-ypanelpos(i))/tan(0.5*pi-sweep);
     chordlen(i) = ((tspan-ypanelpos(i))/tan(leangle)) - ((tspan-ypanelpos(i))/tan(teangle));
-    %Scaling
+        %Scaling
     ubasepanel(i,:) = chordlen(i).*ubase;
     lbasepanel(i,:) = chordlen(i).*lbase;
     xubasepanel(i,:) = chordlen(i).*xu;
     xlbasepanel(i,:) = chordlen(i).*xl;
-    %Translating
+        %Translating
     xubasepanel(i,:) = xubasepanel(i,:) - (tspan-ypanelpos(i))/tan(leangle);
     xlbasepanel(i,:) = xlbasepanel(i,:) - (tspan-ypanelpos(i))/tan(leangle);
-    % Twisting
+        % Twisting
     xubasepanel(i,:) = (xubasepanel(i,:) - xubasepanel(i,size(ubase,1)))*cos(twist(i)*pi/180) + ...
         (ubasepanel(i,:) - ubasepanel(i,size(ubase,1)))*sin(twist(i)*pi/180) + xubasepanel(i,size(ubase,1));
     ubasepanel(i,:) = -(xubasepanel(i,:) - xubasepanel(i,size(ubase,1)))*sin(twist(i)*pi/180) + ...
@@ -84,16 +91,17 @@ for i = 1:panels
         (lbasepanel(i,:) - lbasepanel(i,size(lbase,1)))*sin(twist(i)*pi/180) + xlbasepanel(i,size(ubase,1));
     lbasepanel(i,:) = -(xlbasepanel(i,:) - xlbasepanel(i,size(lbase,1)))*sin(twist(i)*pi/180) + ...
         (lbasepanel(i,:) - lbasepanel(i,size(lbase,1)))*cos(twist(i)*pi/180) + lbasepanel(i,size(ubase,1));
-    %Plotting
-    figure(1);
-    hold on;
-    for j = 1:size(ubase,1)
-       scatter3(xubasepanel(i,j),ubasepanel(i,j),ypanelpos(i),'r*');
-    end
-    for j = 1:size(lbase,1)
-       scatter3(xlbasepanel(i,j),lbasepanel(i,j),ypanelpos(i),'r*');
-    end
-    axis equal tight;
+        %Plotting
+%     figure(1);
+%     hold on;
+%     for j = 1:size(ubase,1)
+%        scatter3(xubasepanel(i,j),ubasepanel(i,j),ypanelpos(i),'b.');
+%     end
+%     for j = 1:size(lbase,1)
+%        scatter3(xlbasepanel(i,j),lbasepanel(i,j),ypanelpos(i),'b.');
+%     end
+%     axis equal tight;
+    %Baseline Config Generation end
 
     %Updating
     
@@ -157,13 +165,13 @@ for i = 1:panels
     lnewpanel(i,:) = -(xlnewpanel(i,:) - xlnewpanel(i,size(lbase,1)))*sin(twistnew(i)*pi/180) + ...
         (lnewpanel(i,:) - lnewpanel(i,size(lbase,1)))*cos(twistnew(i)*pi/180) + lnewpanel(i,size(ubase,1));
     
-    figure(2);
+    figure(2)
     hold on;
     for j = 1:size(ubase,1)
-       scatter3(xunewpanel(i,j),unewpanel(i,j),ypanelpos(i),'r*');
+       scatter3(xunewpanel(i,j),unewpanel(i,j),ypanelpos(i),'r.');
     end
     for j = 1:size(lbase,1)
-       scatter3(xlnewpanel(i,j),lnewpanel(i,j),ypanelpos(i),'r*');
+       scatter3(xlnewpanel(i,j),lnewpanel(i,j),ypanelpos(i),'r.');
     end
     axis equal tight;
 
