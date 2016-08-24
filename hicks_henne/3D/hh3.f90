@@ -3,7 +3,7 @@
 program hickshenne
 implicit none
 
-integer, parameter :: t_b = 4, panels = 3, hh = 4
+integer, parameter :: t_b = 4, panels = 5, hh = 4
 real(kind = 8), parameter :: pi = acos(-1.), span = 1196.3, tspan = 2734.5, xspan = 1578.7, sweep = 26.7*pi/180, leangle = 60*pi/180, teangle = 74.219120*pi/180
 real, dimension(:), allocatable :: xu, ubase, xl, lbase, ubasepanel(:,:), lbasepanel(:,:), unewpanel(:,:), lnewpanel(:,:), xubasepanel(:,:), xlbasepanel(:,:), xunewpanel(:,:), xlnewpanel(:,:), file(:,:), dpas, dpbs
 integer :: i, j, k, Nu, Nl, io, foo
@@ -175,15 +175,6 @@ do i = 1,panels
     xlnewpanel(i,:) = (xlnewpanel(i,:) - xlnewpanel(i,Nl))*cos(twistnew(i)*pi/180) + (lnewpanel(i,:) - lnewpanel(i,Nl))*sin(twistnew(i)*pi/180) + xlnewpanel(i,Nl);
     lnewpanel(i,:) = -(xlnewpanel(i,:) - xlnewpanel(i,Nl))*sin(twistnew(i)*pi/180) + (lnewpanel(i,:) - lnewpanel(i,Nl))*cos(twistnew(i)*pi/180) + lnewpanel(i,Nl);
 
-    !figure(2)
-    !hold on;
-    !for j = 1:size(ubase,1)
-    !   scatter3(xunewpanel(i,j),unewpanel(i,j),ypanelpos(i),'r.');
-    !end
-    !for j = 1:size(lbase,1)
-    !   scatter3(xlnewpanel(i,j),lnewpanel(i,j),ypanelpos(i),'r.');
-    !end
-    !axis equal tight;
 
 
 enddo

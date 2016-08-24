@@ -9,7 +9,7 @@ clc;
 format long;
 
 % Baseline Config Parameters Onera M6
-panels = 3;
+panels = 5;
 hh = 5;
 t_b = 4;
 span = 1196.3;
@@ -92,15 +92,15 @@ for i = 1:panels
     lbasepanel(i,:) = -(xlbasepanel(i,:) - xlbasepanel(i,size(lbase,1)))*sin(twist(i)*pi/180) + ...
         (lbasepanel(i,:) - lbasepanel(i,size(lbase,1)))*cos(twist(i)*pi/180) + lbasepanel(i,size(ubase,1));
         %Plotting
-    figure(1);
-    hold on;
-    for j = 1:size(ubase,1)
-       scatter3(xubasepanel(i,j),ubasepanel(i,j),ypanelpos(i),'b.');
-    end
-    for j = 1:size(lbase,1)
-       scatter3(xlbasepanel(i,j),lbasepanel(i,j),ypanelpos(i),'b.');
-    end
-    axis equal tight;
+%     figure(1);
+%     hold on;
+%     for j = 1:size(ubase,1)
+%        scatter3(xubasepanel(i,j),ubasepanel(i,j),ypanelpos(i),'b.');
+%     end
+%     for j = 1:size(lbase,1)
+%        scatter3(xlbasepanel(i,j),lbasepanel(i,j),ypanelpos(i),'b.');
+%     end
+%     axis equal tight;
     %Baseline Config Generation end
 
     %Updating
@@ -165,15 +165,15 @@ for i = 1:panels
     lnewpanel(i,:) = -(xlnewpanel(i,:) - xlnewpanel(i,size(lbase,1)))*sin(twistnew(i)*pi/180) + ...
         (lnewpanel(i,:) - lnewpanel(i,size(lbase,1)))*cos(twistnew(i)*pi/180) + lnewpanel(i,size(ubase,1));
     
-    figure(2)
-    hold on;
-    for j = 1:size(ubase,1)
-       scatter3(xunewpanel(i,j),unewpanel(i,j),ypanelpos(i),'r.');
-    end
-    for j = 1:size(lbase,1)
-       scatter3(xlnewpanel(i,j),lnewpanel(i,j),ypanelpos(i),'r.');
-    end
-    axis equal tight;
+%     figure(2)
+%     hold on;
+%     for j = 1:size(ubase,1)
+%        scatter3(xunewpanel(i,j),unewpanel(i,j),ypanelpos(i),'r.');
+%     end
+%     for j = 1:size(lbase,1)
+%        scatter3(xlnewpanel(i,j),lnewpanel(i,j),ypanelpos(i),'r.');
+%     end
+%     axis equal tight;
 
     
      
