@@ -1,4 +1,4 @@
-program expt
+program param
   implicit none
 
   type intreal
@@ -230,4 +230,4 @@ do k = 1,totnodes
 enddo
 
 
-end program expt
+end program param
