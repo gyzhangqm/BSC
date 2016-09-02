@@ -26,7 +26,7 @@ xu = du96upper(:,1);
 lbase = du96lower(:,2);
 xl = du96lower(:,1);
 
-n = 9;                      %Number of design variables
+n = 5;                      %Number of design variables
 h = 1/(n+1);
 bump_pos = 0+h:h:1-h;       %Bump positions
 dpa = zeros(n,1);
