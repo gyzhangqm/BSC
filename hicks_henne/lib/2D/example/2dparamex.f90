@@ -9,7 +9,7 @@ program param
   TYPE(intreal) :: mesh_disp
 
   integer :: nodu, nodl, i, j, k, ierr ,il, counterstart, counterend, counter, l, ndp, totnodes
-  integer :: pair(2), flag, pos, hue, huehue
+  integer :: pair(2), flag, pos
   real, dimension(:), allocatable :: xu, yu, xl, yl, bump_pos, xunew, yunew, xlnew, ylnew, dispu, displ
   integer, dimension(:), allocatable :: unodes, lnodes
   real, dimension(:), allocatable :: dpa, dpb
@@ -24,7 +24,7 @@ program param
   fixnod = trim(cmd)//".fix.nod"
   code = trim(cmd)//".codes"
 !-------------------------------------------------------------------------------
-!-------- Reading the flags for upper and lower surfaces from codes.dat --------
+!-------- Reading the flags for upper and lower surfaces from .codes file ------
   open(1,file = code)
   read(1,*) input
   read(1,'(a)') input
@@ -186,7 +186,6 @@ do i = 1,nodu
   do j = 1,ndp
       m = log(0.5)/log(bump_pos(j))
       sum = sum + dpa(j)*(sin(pi*xunew(i)**m)**t_b)
-      !gradu(i,j) = sin(pi*xu(i)**m)**t_b;
   enddo
   yunew(i) = yunew(i) + sum
   yunew(i) = yunew(i) * scaleu
@@ -200,8 +199,6 @@ do i = 1,nodl
   do j = 1,ndp
       m = log(0.5)/log(bump_pos(j))
       sum = sum + dpb(j)*(sin(pi*xlnew(i)**m)**t_b)
-      !print *,sum, xlnew(i)
-      !gradu(i,j) = sin(pi*xu(i)**m)**t_b;
   enddo
   ylnew(i) = ylnew(i) + sum
   ylnew(i) = ylnew(i) * scalel

@@ -2,27 +2,36 @@ program param
   implicit none
 
   integer :: nodu, nodl, i, j, k, ierr ,il, counterstart, counterend, counter, l, ndp, totnodes
-  integer :: pair(2), flag
-  real, dimension(:), allocatable :: xu, yu, xl, yl, bump_pos, xunew, yunew, xlnew, ylnew, dispu, displ, gradu(:,:), gradl(:,:), grad(:,:), lambda(:,:), gradout(:,:)
+  integer :: pair(2), flag, pos
+  real, dimension(:), allocatable :: xu, yu, xl, yl, bump_pos, xunew, yunew, xlnew, ylnew, dispu, displ, gradu(:,:), gradl(:,:), grad(:,:), lambda(:,:), gradout(:,:), adjout
   integer, dimension(:), allocatable :: unodes, lnodes
   real, dimension(:), allocatable :: dpa, dpb
   real (kind = 8) :: three(3), pairreal(2), h, scaleu, scalel, sum, m, xutrans, xltrans, dummy
   integer, parameter :: t_b = 4
   real(kind = 8), parameter :: pi = acos(-1.)
-  character(256) :: input, cmd, geo, fixnod, adjoint
+  character(256) :: input, cmd, geo, fixnod, adjoint, code
   integer :: foo, flagupper, flaglower
 
   call get_command_argument(1, cmd)
   geo = trim(cmd)//".geo.dat"
   fixnod = trim(cmd)//".fix.nod"
   adjoint = trim(cmd)//".ensi.DISPM-000001"
+  code = trim(cmd)//".codes"
 
 !-------------------------------------------------------------------------------
-!-------- Reading the flags for upper and lower surfaces from codes.dat --------
+!-------- Reading the flags for upper and lower surfaces from .codes file ------
 
-  open(1,file = 'codes.dat')
-  read(1,*) flagupper
-  read(1,*) flaglower
+  open(1,file = code)
+  read(1,*) input
+  read(1,'(a)') input
+  input = trim(input)
+  pos = index(input,":")
+  read(input(pos+1:), *) flagupper
+  read(1,'(a)') input
+  input = trim(input)
+  pos = index(input,":")
+  read(input(pos+1:), *) flaglower
+  close(1)
 
 !-------------------------------------------------------------------------------
 !---- Finds out the nodes belonging to the upper and lowers surfaces -----------
@@ -155,7 +164,7 @@ allocate(dispu(nodl))
 allocate(displ(nodl))
 allocate(gradu(nodu,ndp))
 allocate(gradl(nodl,ndp))
-allocate(grad(totnodes,ndp))
+
 
 h = 1./(ndp+1)
 do i = 1,ndp
@@ -201,23 +210,31 @@ do i = 1,nodl
 enddo
 !-------------------------------------------------------------------------------
 !---- Making Grad matrix -------------------------------------------------------
-
+allocate(grad(totnodes,2*ndp))
 do k=1,totnodes
   flag = 0
   do i = 1, nodu
     if ( unodes(i) == k ) then
-      grad(k,:) = gradu(i,:)
+      !grad(k,:) = gradu(i,:)
+      do j = 1,ndp
+        grad(k,j) = gradu(i,j)
+        grad(k,ndp+j) = 0.
+      enddo
       flag = 1
     end if
   enddo
   do i = 1, nodl
     if ( lnodes(i) == k ) then
       grad(k,:) = gradl(i,:)
+      do j = 1,ndp
+        grad(k,ndp+j) = gradl(i,j)
+        grad(k,j) = 0.
+      enddo
       flag = 1
     end if
   enddo
   if ( flag == 0 ) then
-    grad(k,:) = 0
+    grad(k,:) = 0.
   end if
 enddo
 
@@ -225,7 +242,8 @@ enddo
 !-------------------------------------------------------------------------------
 !------ Reading Lambda from Adjoint Alya  and writing gradout.txt---------------
 allocate(lambda(totnodes,2))
-allocate(gradout(totnodes,ndp))
+allocate(gradout(totnodes,2*ndp))
+allocate(adjout(2*ndp))
 open(1,file=adjoint,status='old',iostat=ierr)
 do i = 1,4
   read(1,*) input
@@ -241,15 +259,25 @@ enddo
 close(1)
 
 do k = 1,totnodes
-  do i = 1,ndp
+  do i = 1,2*ndp
     gradout(k,i) = 0.*lambda(k,1) + grad(k,i)*lambda(k,2)
   enddo
 enddo
 
-open(unit = 1, file = 'gradout.txt', status = 'unknown', iostat = ierr)
-do k = 1,totnodes
-  write(1,*) (gradout(k,j), j=1,ndp)
+do i = 1,2*ndp
+  adjout(i) = 0.
+  do k = 1,totnodes
+    adjout(i) = adjout(i) + gradout(k,i)
+  enddo
 enddo
+
+open(unit = 1, file = 'grad.txt', status = 'unknown', iostat = ierr)
+write(1,*)"START"
+do k = 1,2*ndp
+  !write(1,*) (grad(k,j), j=1,2*ndp)
+  write(1,*) adjout(k)
+enddo
+write(1,*)"END"
 close(1)
 
 
