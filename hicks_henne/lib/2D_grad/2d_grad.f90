@@ -1,27 +1,21 @@
 program param
   implicit none
 
-  type intreal
-    integer,dimension(1)   :: ints
-    real,dimension(2)      :: floats
-  endtype intreal
-
-  TYPE(intreal) :: mesh_disp
-
   integer :: nodu, nodl, i, j, k, ierr ,il, counterstart, counterend, counter, l, ndp, totnodes
   integer :: pair(2), flag
-  real, dimension(:), allocatable :: xu, yu, xl, yl, bump_pos, xunew, yunew, xlnew, ylnew, dispu, displ
+  real, dimension(:), allocatable :: xu, yu, xl, yl, bump_pos, xunew, yunew, xlnew, ylnew, dispu, displ, gradu(:,:), gradl(:,:), grad(:,:), lambda(:,:), gradout(:,:)
   integer, dimension(:), allocatable :: unodes, lnodes
   real, dimension(:), allocatable :: dpa, dpb
-  real (kind = 8) :: three(3), pairreal(2), h, scaleu, scalel, sum, m, xutrans, xltrans
+  real (kind = 8) :: three(3), pairreal(2), h, scaleu, scalel, sum, m, xutrans, xltrans, dummy
   integer, parameter :: t_b = 4
   real(kind = 8), parameter :: pi = acos(-1.)
-  character(256) :: input, cmd, geo, fixnod
+  character(256) :: input, cmd, geo, fixnod, adjoint
   integer :: foo, flagupper, flaglower
 
   call get_command_argument(1, cmd)
   geo = trim(cmd)//".geo.dat"
   fixnod = trim(cmd)//".fix.nod"
+  adjoint = trim(cmd)//".ensi.DISPM-000001"
 
 !-------------------------------------------------------------------------------
 !-------- Reading the flags for upper and lower surfaces from codes.dat --------
@@ -159,6 +153,9 @@ allocate(xlnew(nodl))
 allocate(ylnew(nodl))
 allocate(dispu(nodl))
 allocate(displ(nodl))
+allocate(gradu(nodu,ndp))
+allocate(gradl(nodl,ndp))
+allocate(grad(totnodes,ndp))
 
 h = 1./(ndp+1)
 do i = 1,ndp
@@ -179,7 +176,7 @@ do i = 1,nodu
   do j = 1,ndp
       m = log(0.5)/log(bump_pos(j))
       sum = sum + dpa(j)*(sin(pi*xunew(i)**m)**t_b)
-      !gradu(i,j) = sin(pi*xu(i)**m)**t_b;
+      gradu(i,j) = sin(pi*xunew(i)**m)**t_b;
   enddo
   yunew(i) = yunew(i) + sum
   yunew(i) = yunew(i) * scaleu
@@ -193,8 +190,7 @@ do i = 1,nodl
   do j = 1,ndp
       m = log(0.5)/log(bump_pos(j))
       sum = sum + dpb(j)*(sin(pi*xlnew(i)**m)**t_b)
-      !print *,sum, xlnew(i)
-      !gradu(i,j) = sin(pi*xu(i)**m)**t_b;
+      gradl(i,j) = sin(pi*xlnew(i)**m)**t_b;
   enddo
   ylnew(i) = ylnew(i) + sum
   ylnew(i) = ylnew(i) * scalel
@@ -204,26 +200,57 @@ do i = 1,nodl
 
 enddo
 !-------------------------------------------------------------------------------
-!------- Writing into mesh_disp.txt file ---------------------------------------
-open(unit = 1, file = 'mesh_disp.txt', status = 'unknown', iostat = ierr)
-do k = 1,totnodes
+!---- Making Grad matrix -------------------------------------------------------
+
+do k=1,totnodes
   flag = 0
   do i = 1, nodu
     if ( unodes(i) == k ) then
-      write(1,*) unodes(i), 0.0, dispu(i)
+      grad(k,:) = gradu(i,:)
       flag = 1
     end if
   enddo
   do i = 1, nodl
     if ( lnodes(i) == k ) then
-      write(1,*) lnodes(i), 0.0, displ(i)
+      grad(k,:) = gradl(i,:)
       flag = 1
     end if
   enddo
   if ( flag == 0 ) then
-    write(1,*) k, 0.0, 0.0
+    grad(k,:) = 0
   end if
 enddo
+
+
+!-------------------------------------------------------------------------------
+!------ Reading Lambda from Adjoint Alya  and writing gradout.txt---------------
+allocate(lambda(totnodes,2))
+allocate(gradout(totnodes,ndp))
+open(1,file=adjoint,status='old',iostat=ierr)
+do i = 1,4
+  read(1,*) input
+enddo
+do i = 1,totnodes
+  read(1,*) dummy
+  lambda(i,1) = dummy
+enddo
+do i = 1,totnodes
+  read(1,*) dummy
+  lambda(i,2) = dummy
+enddo
+close(1)
+
+do k = 1,totnodes
+  do i = 1,ndp
+    gradout(k,i) = 0.*lambda(k,1) + grad(k,i)*lambda(k,2)
+  enddo
+enddo
+
+open(unit = 1, file = 'gradout.txt', status = 'unknown', iostat = ierr)
+do k = 1,totnodes
+  write(1,*) (gradout(k,j), j=1,ndp)
+enddo
+close(1)
 
 
 end program param

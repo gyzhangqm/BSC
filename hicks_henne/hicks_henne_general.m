@@ -37,7 +37,7 @@ for i = 1:size(ubase)
     for j = 1:n
         m = log(0.5)/log(bump_pos(j));
         suma = suma + dpa(j)*(sin(pi*xu(i)^m)^t_b);
-        gradu(i,j) = sin(pi*xu(i)^m)^t_b;
+        gradu(i,j) = sin(pi*xu(i)^m)^t_b
     end
     unew(i) = ubase(i) + suma;
 end
@@ -46,7 +46,7 @@ for i = 1:size(lbase)
     for j = 1:n
         m = log(0.5)/log(bump_pos(j));
         sumb = sumb + dpb(j)*(sin(pi*xl(i)^m)^t_b);
-        gradl(i,j) = sin(pi*xl(i)^m)^t_b;
+        gradl(i,j) = sin(pi*xl(i)^m)^t_b
     end
     lnew(i) = lbase(i) + sumb;
 end
