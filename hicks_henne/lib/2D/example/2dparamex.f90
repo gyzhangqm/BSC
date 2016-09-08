@@ -72,7 +72,7 @@ program param
        endif
       if (pair(2) == flaglower) then
         lnodes(j) = pair(1)
-        j = j +1
+        j = j + 1
       endif
     endif
 
@@ -134,7 +134,7 @@ totnodes = counterend - counterstart +1
 !-------------------------------------------------------------------------------
 !--- Finding Number of design parameters for des_var file and reading them -----
 ndp = 0
-open(1,file='des_var',status='old',iostat=ierr)
+open(1,file='des_vars.dat',status='old',iostat=ierr)
 
   do while (ierr.eq.0)
     read(1,*,iostat=ierr)
@@ -172,9 +172,10 @@ do i = 1,ndp
   bump_pos(i) = i*h
 enddo
 xunew = xu/scaleu
-yunew = yu/scaleu
+yunew = yu !yunew = yu/scaleu
+
 xlnew = xl/scalel
-ylnew = yl/scalel
+ylnew = yl !ylnew = yl/scalel
 xutrans = minval(xunew)
 xltrans = minval(xlnew)
 xunew = xunew - xutrans
@@ -188,8 +189,9 @@ do i = 1,nodu
       sum = sum + dpa(j)*(sin(pi*xunew(i)**m)**t_b)
   enddo
   yunew(i) = yunew(i) + sum
-  yunew(i) = yunew(i) * scaleu
+  !yunew(i) = yunew(i) * scaleu
   dispu(i) = yunew(i) - yu(i)
+  !print *,dispu(i)
   xunew(i) = xunew(i) + xutrans
   xunew(i) = xunew(i) * scaleu
 enddo
@@ -201,15 +203,16 @@ do i = 1,nodl
       sum = sum + dpb(j)*(sin(pi*xlnew(i)**m)**t_b)
   enddo
   ylnew(i) = ylnew(i) + sum
-  ylnew(i) = ylnew(i) * scalel
+  !ylnew(i) = ylnew(i) * scalel
   displ(i) = ylnew(i) - yl(i)
+  !print *,displ(i)
   xlnew(i) = xlnew(i) + xltrans
   xlnew(i) = xlnew(i) * scalel
 
 enddo
 !-------------------------------------------------------------------------------
 !------- Writing into mesh_disp.txt file ---------------------------------------
-open(unit = 1, file = 'mesh_disp.txt', status = 'unknown', iostat = ierr)
+open(unit = 1, file = 'mesh_disp.dat', status = 'unknown', iostat = ierr)
 do k = 1,totnodes
   flag = 0
   do i = 1, nodu
@@ -242,6 +245,5 @@ do k = 1,nodl
   write(1,*) xl(k), yl(k)
   write(2,*) xlnew(k), ylnew(k)
 end do
-
 
 end program param

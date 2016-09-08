@@ -16,11 +16,8 @@ figure(1)
 hold on;
 axis equal tight;
 for i = 1:n
-    scatter(xbase(i),ybase(i));
+    scatter(xbase(i),ybase(i),'r');
 end
-figure(2)
-hold on;
-axis equal tight;
 for i = 1:n
-    scatter(xnew(i),ynew(i));
+    scatter(xnew(i),ynew(i),'b');
 end

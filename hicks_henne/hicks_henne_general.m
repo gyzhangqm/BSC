@@ -31,13 +31,14 @@ h = 1/(n+1);
 bump_pos = 0+h:h:1-h;       %Bump positions
 dpa = zeros(n,1);
 dpb = zeros(n,1);
+dpa(4) = 1e-8;
 t_b = 4;                    %Width control parameter
 for i = 1:size(ubase)
     suma = 0;
     for j = 1:n
         m = log(0.5)/log(bump_pos(j));
         suma = suma + dpa(j)*(sin(pi*xu(i)^m)^t_b);
-        gradu(i,j) = sin(pi*xu(i)^m)^t_b
+        gradu(i,j) = sin(pi*xu(i)^m)^t_b;
     end
     unew(i) = ubase(i) + suma;
 end
@@ -46,7 +47,7 @@ for i = 1:size(lbase)
     for j = 1:n
         m = log(0.5)/log(bump_pos(j));
         sumb = sumb + dpb(j)*(sin(pi*xl(i)^m)^t_b);
-        gradl(i,j) = sin(pi*xl(i)^m)^t_b
+        gradl(i,j) = sin(pi*xl(i)^m)^t_b;
     end
     lnew(i) = lbase(i) + sumb;
 end
