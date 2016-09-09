@@ -92,6 +92,8 @@ counter = 0
 i = 1
 j = 1
 
+open(2,file = 'dump/dumpallu.txt')
+open(3,file = 'dump/dumpalll.txt')
 open(1,file=geo,status='old',iostat=ierr)
 do while (ierr.eq.0)
   read(1,'(A)',iostat=ierr) input
@@ -107,29 +109,25 @@ enddo
 
 rewind(1)
 
+counter = 0
 do l = 1,counterstart-1
   read(1,*)
 end do
 do l = counterstart,counterend
   read(1,*) geoinput
   do k = 1,nodu
-      if ( unodes(k) == three(1) ) then
-        !xu(i) = three(2)
-        !yu(i) = three(3)
-        !i = i + 1
-        print *,geoinput
+      if ( unodes(k) == geoinput%ints(1) ) then
+        write(2,*) geoinput%floats(1), geoinput%floats(2), geoinput%floats(3)
       end if
     enddo
     do k = 1,nodl
-      if ( lnodes(k) == three(1) ) then
-        !xl(j) = three(2)
-        !yl(j) = three(3)
-        !j = j + 1
-        print *,geoinput
+      if ( lnodes(k) == geoinput%ints(1) ) then
+        write(3,*) geoinput%floats(1), geoinput%floats(2), geoinput%floats(3)
       end if
     enddo
 end do
 close(1)
 totnodes = counterend - counterstart +1
+
 
 end program param

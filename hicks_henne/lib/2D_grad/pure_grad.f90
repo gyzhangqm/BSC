@@ -342,7 +342,7 @@ enddo
 
 !-------------------------------------------------------------------------------
 !------------- Writing into {casename}_grad.dat --------------------------------
-print *,areagrad
+
 open(unit = 1, file = gradtitle, status = 'unknown', iostat = ierr)
 write(1,*)"START"
 do k = 1,2*ndp
@@ -352,17 +352,21 @@ write(1,*)"END"
 close(1)
 
 open(unit = 1, file = 'functional.dat')
+open(unit = 2, file = 'functional_all.dat')
 read(1,*)dummy
+write(2,*)dummy
+write(2,*)area
 rewind(1)
 write(1,*)dummy + (gamma*0.5*(area-1.5)**2)
 
 
+
 !-------------------------------------------------------------------------------
 !------ Dump Test --------------------------------------------------------------
-open(unit = 1, file = 'dumptest/dump.txt')
-do k = 1,nodu+nodl
-  write(1,*) x(k), y(k)
-enddo
+!open(unit = 1, file = 'dumptest/dump.txt')
+!do k = 1,nodu+nodl
+!  write(1,*) x(k), y(k)
+!enddo
 
 
 
