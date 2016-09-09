@@ -212,9 +212,9 @@ do i = 1,ndp
   bump_pos(i) = i*h
 enddo
 xunew = xu/scaleu
-yunew = yu/scaleu
+yunew = yu
 xlnew = xl/scalel
-ylnew = yl/scalel
+ylnew = yl
 xutrans = minval(xunew)
 xltrans = minval(xlnew)
 xunew = xunew - xutrans
@@ -227,13 +227,15 @@ do i = 1,nodu
       m = log(0.5)/log(bump_pos(j))
       sum = sum + dpa(j)*(sin(pi*xunew(i)**m)**t_b)
       gradu(i,j) = sin(pi*xunew(i)**m)**t_b;
+      !sum = sum + (dpa(j)*2)
+      !gradu(i,j) = 2.
   enddo
   yunew(i) = yunew(i) + sum
-  yunew(i) = yunew(i) * scaleu
   dispu(i) = yunew(i) - yu(i)
   xunew(i) = xunew(i) + xutrans
   xunew(i) = xunew(i) * scaleu
 enddo
+
 
 do i = 1,nodl
   sum = 0.
@@ -241,14 +243,16 @@ do i = 1,nodl
       m = log(0.5)/log(bump_pos(j))
       sum = sum + dpb(j)*(sin(pi*xlnew(i)**m)**t_b)
       gradl(i,j) = sin(pi*xlnew(i)**m)**t_b;
+      !sum = sum +(dpb(j)*2)
+      !gradl(i,j) = 2.
   enddo
   ylnew(i) = ylnew(i) + sum
-  ylnew(i) = ylnew(i) * scalel
   displ(i) = ylnew(i) - yl(i)
   xlnew(i) = xlnew(i) + xltrans
   xlnew(i) = xlnew(i) * scalel
 
 enddo
+
 !-------------------------------------------------------------------------------
 !---- Making Grad matrix -------------------------------------------------------
 allocate(grad(totnodes,2*ndp))
@@ -358,7 +362,7 @@ do i = 1,nodu+nodl-1
 enddo
 areaold = 0.5*abs(firstterm - secondterm + (x(nodl+nodu)*y(1)) - (x(1)*y(nodu+nodl)))
 dummy = (firstterm - secondterm + (x(nodl+nodu)*y(1)) - (x(1)*y(nodu+nodl)))/abs(firstterm - secondterm + (x(nodl+nodu)*y(1)) - (x(1)*y(nodu+nodl)))
-print *,dummy
+
 firstterm = 0.
 secondterm = 0.
 
@@ -382,10 +386,9 @@ do i = 1,2*ndp
   areagrad(i) = 0.5*dummy*(firstterm - secondterm + x(nodu+nodl)*gradconcat(1,i) - x(1)*gradconcat(nodu+nodl,i))
 enddo
 
-print *,(areanew-areaold)/(-1e-8), "Finite difference grad"
-print *, areanew, "new area"
-print *, areaold, "old area"
-print *,areagrad(10), "Areagrad"
+print *,(areanew-areaold)/(1e-8), "Finite difference grad"
+print *,areagrad(1), "Areagrad"
+print *,areagrad
 !-------------------------------------------------------------------------------
 !------------- Writing into {casename}_grad.dat --------------------------------
 
@@ -405,6 +408,7 @@ write(1,*) dummy + (gamma*0.5*(areaold-1.5)**2)
 
 !-------------------------------------------------------------------------------
 !------ Dump Test --------------------------------------------------------------
+
 !open(unit = 1, file = 'dumptest/dumpbase.txt')
 !open(unit = 2, file = 'dumptest/dumpnew.txt')
 !do k = 1,nodu+nodl

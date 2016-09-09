@@ -342,7 +342,7 @@ enddo
 
 !-------------------------------------------------------------------------------
 !------------- Writing into {casename}_grad.dat --------------------------------
-
+print *,areagrad
 open(unit = 1, file = gradtitle, status = 'unknown', iostat = ierr)
 write(1,*)"START"
 do k = 1,2*ndp
