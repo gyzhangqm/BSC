@@ -10,7 +10,7 @@ program mc
 
   integer, parameter :: zprecision = 6
   character(256) :: input, cmd, geo, fixnod, code
-  integer :: flagupper, flaglower, pos, nodu, nodl,  i, j, k, l, ierr ,il, counterstart, counterend, counter, totnodes, pair(2), buffer
+  integer :: flagupper, flaglower, pos, nodu, nodl,  i, j, k, l, ierr ,il, counterstart, counterend, counter, totnodes, pair(2), buffer, flag
   integer, dimension(:), allocatable :: unodes, lnodes
   real (kind = 8) :: bufferreal, epsilon
 
@@ -93,6 +93,7 @@ j = 1
 
 open(2,file = 'dump/dumpall.txt')
 open(1,file=geo,status='old',iostat=ierr)
+open(3,file = 'corrected.geo.dat')
 do while (ierr.eq.0)
   read(1,'(A)',iostat=ierr) input
   counter = counter + 1
@@ -109,9 +110,11 @@ rewind(1)
 
 
 do l = 1,counterstart-1
-  read(1,*)
+  read(1,'(a)') input
+  write(3,*) trim(input)
 end do
 do l = counterstart,counterend
+  flag = 0
   read(1,*) geoinput
   do k = 1,nodu
       if ( unodes(k) == geoinput%ints(1) ) then
@@ -119,6 +122,8 @@ do l = counterstart,counterend
         bufferreal = buffer
         bufferreal = bufferreal/10**zprecision
         write(2,*) geoinput%ints(1), geoinput%floats(1), geoinput%floats(2), bufferreal
+        write(3,*) geoinput%ints(1), geoinput%floats(1), geoinput%floats(2), bufferreal
+        flag = 1
       end if
     enddo
     do k = 1,nodl
@@ -127,15 +132,31 @@ do l = counterstart,counterend
         bufferreal = buffer
         bufferreal = bufferreal/10**zprecision
         write(2,*) geoinput%ints(1), geoinput%floats(1), geoinput%floats(2), bufferreal
+        write(3,*) geoinput%ints(1), geoinput%floats(1), geoinput%floats(2), bufferreal
+        flag = 1
       end if
     enddo
+    if ( flag == 0 ) then
+      write(3,*) geoinput%ints(1), geoinput%floats(1), geoinput%floats(2), geoinput%floats(3)
+    end if
 end do
+
+ierr = 0
+do while (ierr.eq.0)
+  read(1,'(A)',iostat=ierr) input
+  write(3,*) trim(input)
+enddo
+
+
 close(1)
 close(2)
+close(3)
 totnodes = counterend - counterstart +1
 
-
-
+cmd = 'rm '//geo
+call execute_command_line(cmd)
+cmd = 'mv corrected.geo.dat '//geo
+call execute_command_line(cmd)
 
 
 
