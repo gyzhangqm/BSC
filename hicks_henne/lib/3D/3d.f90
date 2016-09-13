@@ -5,18 +5,20 @@ program param
     integer,dimension(1)   :: ints
     real,dimension(3)      :: floats
   endtype intreal
-  type(intreal) :: geoinput, temp
-  type(intreal), dimension(:), allocatable :: panelgeoinput
+  type(intreal) :: geoinput, temp, geoinput1, geoinput2
+  type(intreal), dimension(:), allocatable :: panelgeoinput, panelgeoinputu, panelgeoinputl, uleft, uright, lleft, lright
 
 
   integer, parameter :: t_b = 4
   real(kind = 8), parameter :: pi = acos(-1.)
   character(256) :: input, cmd, geo, fixnod, code
-  integer :: flagupper, flaglower, pos, nodu, nodl,  i, j, k, l, ierr, counterstart, counterend, counter, totnodes, pair(2), panels
-  integer :: nx, totalpanels
-  integer, dimension(:), allocatable :: unodes, lnodes, panelflag
-  real, dimension(:), allocatable :: zpos, zpanelpos
-  real(kind = 8) :: buffer
+  integer :: flagupper, flaglower, pos, nodu, nodl,  i, j, k, l, ierr, counterstart, counterend, counter, totnodes
+  integer :: nx, totalpanels, pair(2), panels, ndp, leftbound, rightbound, flag
+  integer, dimension(:), allocatable :: unodes, lnodes, panelflag, masterpanelno
+  real, dimension(:), allocatable :: zpos, zpanelpos, dpa(:,:), dpb(:,:), areaold, areanew, x, y
+  real, dimension(:), allocatable :: xu, yu, xl, yl, bump_pos, xunew, yunew, xlnew, ylnew
+  real(kind = 8) :: buffer, pairreal(2), h, scaleu, scalel, sum, m, xutrans, xltrans, firstterm, secondterm, area
+  real(kind = 8) :: volumeold, volumenew
 
   type data
     integer, dimension(:), allocatable :: nodenos
@@ -113,7 +115,6 @@ do while (ierr.eq.0)
 enddo
 totnodes = counterend - counterstart +1
 
-
 rewind(1)
 
 do l = 1,counterstart-1
@@ -163,6 +164,19 @@ close(1)
 nx = counter
 totalpanels = nodu/nx
 
+do i = 1,panels
+  do j = 1,panels
+    if ( i == j ) then
+    else
+      if ( zpos(j) .gt. zpos(i) ) then
+        buffer = zpos(i)
+        zpos(i) = zpos(j)
+        zpos(j) = buffer
+      end if
+    end if
+  enddo
+enddo
+
 !-------------------------------------------------------------------------------
 !---------------- Extracting data ----------------------------------------------
 
@@ -194,7 +208,7 @@ do i = 1,totalpanels
   do j = 1,totalpanels
     if ( i == j ) then
     else
-      if ( zpanelpos(j) .lt. zpanelpos(i) ) then
+      if ( zpanelpos(j) .gt. zpanelpos(i) ) then
         buffer = zpanelpos(i)
         zpanelpos(i) = zpanelpos(j)
         zpanelpos(j) = buffer
@@ -209,9 +223,12 @@ open(2,file = 'dumpall_u.txt')
 
 
 do i = 1,totalpanels
-  do while (ierr .eq. 0)
+  do
     j = 1
     read(1,*,iostat=ierr) geoinput
+    if ( ierr/=0 ) then
+      exit
+    end if
     if ( geoinput%floats(3) == zpanelpos(i) ) then
       write(2,*) geoinput%ints(1), geoinput%floats(1), geoinput%floats(2), zpanelpos(i)
       j = j + 1
@@ -227,10 +244,12 @@ open(1,file = 'dumpalll.txt', iostat=ierr)
 open(2,file = 'dumpall_l.txt')
 
 do i = 1,totalpanels
-  do while (ierr .eq. 0)
+  do
     j = 1
-
     read(1,*,iostat=ierr) geoinput
+    if (ierr/=0) then
+      exit
+    endif
     if ( geoinput%floats(3) == zpanelpos(i) ) then
       write(2,*) geoinput%ints(1), geoinput%floats(1), geoinput%floats(2), zpanelpos(i)
       j = j + 1
@@ -246,6 +265,8 @@ close(2)
 call execute_command_line('rm dumpallu.txt')
 call execute_command_line('rm dumpalll.txt')
 
+
+
 do i = 1,totalpanels
   panelflag(i) = 0
   do j = 1,panels
@@ -255,6 +276,14 @@ do i = 1,totalpanels
   enddo
 enddo
 
+allocate(masterpanelno(panels))
+j = 1
+do i = 1,totalpanels
+  if ( panelflag(i) == 1 ) then
+    masterpanelno(j) = i
+    j = j + 1
+  end if
+enddo
 !-------------------------------------------------------------------------------
 !--------------- Sorting all the data with respect to x ------------------------
 
@@ -272,7 +301,7 @@ do i = 1,totalpanels
     do l = 1,nx
       if ( k == l ) then
       else
-        if ( panelgeoinput(l)%floats(1) .le. panelgeoinput(k)%floats(1) ) then
+        if ( panelgeoinput(l)%floats(1) .lt. panelgeoinput(k)%floats(1) ) then
           temp = panelgeoinput(l)
           panelgeoinput(l) = panelgeoinput(k)
           panelgeoinput(k) = temp
@@ -300,7 +329,7 @@ do i = 1,totalpanels
     do l = 1,nx
       if ( k == l ) then
       else
-        if ( panelgeoinput(l)%floats(1) .le. panelgeoinput(k)%floats(1) ) then
+        if ( panelgeoinput(l)%floats(1) .gt. panelgeoinput(k)%floats(1) ) then
           temp = panelgeoinput(l)
           panelgeoinput(l) = panelgeoinput(k)
           panelgeoinput(k) = temp
@@ -319,7 +348,373 @@ close(2)
 call execute_command_line('rm dumpall_u.txt')
 call execute_command_line('rm dumpall_l.txt')
 
+!-------------------------------------------------------------------------------
+!--------------- Reading des_vars.dat ------------------------------------------
 
+ndp = 0
+open(1,file='des_vars.dat',status='old',iostat=ierr)
+
+  do while (ierr.eq.0)
+    read(1,*,iostat=ierr)
+    ndp = ndp + 1
+  end do
+
+  ndp = (ndp - 1)/(2*panels)
+  allocate(dpa(panels,ndp))
+  allocate(dpb(panels,ndp))
+
+rewind(1)
+  do j = 1,panels
+    do i = 1,ndp
+      read(1,*,iostat=ierr) pairreal
+      dpa(j,i) = pairreal(2)
+    enddo
+    do i = 1,ndp
+      read(1,*,iostat=ierr) pairreal
+      dpb(j,i) = pairreal(2)
+    enddo
+  enddo
+close(1)
+
+
+!-------------------------------------------------------------------------------
+!----------------------- Hicks henne update ------------------------------------
+allocate(panelgeoinputu(nx))
+allocate(panelgeoinputl(nx))
+allocate(bump_pos(ndp))
+
+allocate(xu(nx))
+allocate(yu(nx))
+allocate(xl(nx))
+allocate(yl(nx))
+allocate(xunew(nx))
+allocate(yunew(nx))
+allocate(xlnew(nx))
+allocate(ylnew(nx))
+
+h = 1./(ndp+1)
+do i = 1,ndp
+  bump_pos(i) = i*h
+enddo
+
+open(1,file='dumpallu.txt',status='old',iostat=ierr)
+open(2,file='tobeupdatedpanelsu.txt')
+
+do while (ierr.eq.0)
+  read(1,*,iostat=ierr) geoinput
+  do i = 1,panels
+    if ( geoinput%floats(3) == zpos(i) ) then
+      write(2,*) geoinput
+    end if
+  enddo
+enddo
+
+close(1)
+close(2)
+
+open(1,file='dumpalll.txt',status='old',iostat=ierr)
+open(2,file='tobeupdatedpanelsl.txt')
+
+do while (ierr.eq.0)
+  read(1,*,iostat=ierr) geoinput
+  do i = 1,panels
+    if ( geoinput%floats(3) == zpos(i) ) then
+      write(2,*) geoinput
+    end if
+  enddo
+enddo
+
+close(1)
+close(2)
+
+open(1,file='tobeupdatedpanelsu.txt')
+open(2,file='tobeupdatedpanelsl.txt')
+open(3,file='updatedpanelu.txt')
+open(4,file='updatedpanell.txt')
+
+do k = 1,panels
+  do j = 1,nx
+    read(1,*,iostat=ierr) panelgeoinputu(j)
+    read(2,*) panelgeoinputl(j)
+    xu(j) = panelgeoinputu(j)%floats(1)
+    yu(j) = panelgeoinputu(j)%floats(2)
+    xl(j) = panelgeoinputl(j)%floats(1)
+    yl(j) = panelgeoinputl(j)%floats(2)
+  enddo
+
+  scaleu = abs(maxval(xu) - minval(xu))
+  scalel = abs(maxval(xl) - minval(xl))
+
+  xunew = xu/scaleu
+  yunew = yu
+  xlnew = xl/scalel
+  ylnew = yl
+  xutrans = minval(xunew)
+  xltrans = minval(xlnew)
+  xunew = xunew - xutrans
+  xlnew = xlnew - xltrans
+
+  do i = 1,nx
+    sum = 0.
+    do j = 1,ndp
+        m = log(0.5)/log(bump_pos(j))
+        sum = sum + dpa(k,j)*(sin(pi*xunew(i)**m)**t_b)
+    enddo
+    yunew(i) = yunew(i) + sum
+    xunew(i) = xunew(i) + xutrans
+    xunew(i) = xunew(i) * scaleu
+  enddo
+
+  do i = 1,nx
+    sum = 0.
+    do j = 1,ndp
+        m = log(0.5)/log(bump_pos(j))
+        sum = sum + dpb(k,j)*(sin(pi*xlnew(i)**m)**t_b)
+    enddo
+    ylnew(i) = ylnew(i) + sum
+    xlnew(i) = xlnew(i) + xltrans
+    xlnew(i) = xlnew(i) * scalel
+  enddo
+
+  do j = 1,nx
+    panelgeoinputu(j)%floats(1) = xunew(j)
+    panelgeoinputu(j)%floats(2) = yunew(j)
+    panelgeoinputl(j)%floats(1) = xlnew(j)
+    panelgeoinputl(j)%floats(2) = ylnew(j)
+    write(3,*) panelgeoinputu(j)
+    write(4,*) panelgeoinputl(j)
+  enddo
+
+enddo
+close(1)
+close(2)
+close(3)
+close(4)
+
+call execute_command_line('rm tobeupdatedpanelsu.txt')
+call execute_command_line('rm tobeupdatedpanelsl.txt')
+
+
+!-------------------------------------------------------------------------------
+!-------------- Interpolation --------------------------------------------------
+
+allocate(uleft(nx))
+allocate(uright(nx))
+allocate(lleft(nx))
+allocate(lright(nx))
+
+open(1,file='dumpallu.txt',status='old',iostat=ierr)
+open(2,file='updatedpanelu.txt')
+open(3,file='dumpupdatedu.txt')
+
+do k = 1,nx
+  read(1,*)
+  read(2,*) uleft(k)
+  write(3,*) uleft(k)
+enddo
+do k = 1,nx
+  read(2,*) uright(k)
+enddo
+
+do j = 1,panels-1
+  do i = masterpanelno(j)+1,masterpanelno(j+1)-1
+    do k = 1,nx
+      read(1,*) geoinput
+      buffer = uleft(k)%floats(2) + (((uright(k)%floats(2)-uleft(k)%floats(2))/(uright(k)%floats(3)-uleft(k)%floats(3)))*(geoinput%floats(3) - uleft(k)%floats(3)))
+      write(3,*) geoinput%ints(1), geoinput%floats(1), buffer, geoinput%floats(3)
+    enddo
+  enddo
+
+  do k = 1,nx
+    read(1,*)
+    write(3,*) uright(k)
+  enddo
+  uleft = uright
+  do k = 1,nx
+    read(2,*, iostat = ierr) uright(k)
+  enddo
+enddo
+
+
+close(1)
+close(2)
+close(3)
+
+open(1,file='dumpalll.txt',status='old',iostat=ierr)
+open(2,file='updatedpanell.txt')
+open(3,file='dumpupdatedl.txt')
+
+do k = 1,nx
+  read(1,*)
+  read(2,*) lleft(k)
+  write(3,*) lleft(k)
+enddo
+do k = 1,nx
+  read(2,*) lright(k)
+enddo
+
+do j = 1,panels-1
+  do i = masterpanelno(j)+1,masterpanelno(j+1)-1
+    do k = 1,nx
+      read(1,*) geoinput
+      buffer = lleft(k)%floats(2) + (((lright(k)%floats(2)-lleft(k)%floats(2))/(lright(k)%floats(3)-lleft(k)%floats(3)))*(geoinput%floats(3) - lleft(k)%floats(3)))
+      write(3,*) geoinput%ints(1), geoinput%floats(1), buffer, geoinput%floats(3)
+    enddo
+  enddo
+
+  do k = 1,nx
+    read(1,*)
+    write(3,*) lright(k)
+  enddo
+  lleft = lright
+  do k = 1,nx
+    read(2,*, iostat = ierr) lright(k)
+  enddo
+enddo
+
+
+close(1)
+close(2)
+close(3)
+
+call execute_command_line('rm updatedpanelu.txt')
+call execute_command_line('rm updatedpanell.txt')
+
+!-------------------------------------------------------------------------------
+!---------------- Concatenation ------------------------------------------------
+
+open(1,file='baseline.txt')
+open(2,file='dumpallu.txt')
+open(3,file='dumpalll.txt')
+
+do i = 1,totalpanels
+  do k = 1,nx
+    read(2,*) geoinput
+    write(1,*) geoinput
+  enddo
+  do k = 1,nx
+    read(3,*) geoinput
+    write(1,*) geoinput
+  enddo
+enddo
+
+close(1)
+close(2)
+close(3)
+
+open(1,file='new.txt')
+open(2,file='dumpupdatedu.txt')
+open(3,file='dumpupdatedl.txt')
+
+do i = 1,totalpanels
+  do k = 1,nx
+    read(2,*) geoinput
+    write(1,*) geoinput
+  enddo
+  do k = 1,nx
+    read(3,*) geoinput
+    write(1,*) geoinput
+  enddo
+enddo
+
+close(1)
+close(2)
+close(3)
+
+call execute_command_line('rm dumpallu.txt')
+call execute_command_line('rm dumpalll.txt')
+call execute_command_line('rm dumpupdatedu.txt')
+call execute_command_line('rm dumpupdatedl.txt')
+
+!-------------------------------------------------------------------------------
+!------------------ Area Calculation of each panel -----------------------------
+
+
+allocate(areaold(totalpanels))
+allocate(areanew(totalpanels))
+
+allocate(x(2*nx))
+allocate(y(2*nx))
+
+open(1,file='baseline.txt')
+open(2,file='new.txt')
+
+do j = 1,totalpanels
+  !---- old areas
+  do k = 1,2*nx
+    read(1,*)geoinput
+    x(k) = geoinput%floats(1)
+    y(k) = geoinput%floats(2)
+  enddo
+
+  firstterm = 0.
+  secondterm = 0.
+  do i = 1,2*nx-1
+    firstterm = firstterm + x(i)*y(i+1)
+    secondterm = secondterm + x(i+1)*y(i)
+  enddo
+  area = 0.5*abs(firstterm - secondterm + (x(2*nx)*y(1)) - (x(1)*y(2*nx)))
+  areaold(j) = area
+
+  !----- new areas
+  do k = 1,2*nx
+    read(2,*)geoinput
+    x(k) = geoinput%floats(1)
+    y(k) = geoinput%floats(2)
+  enddo
+
+  firstterm = 0.
+  secondterm = 0.
+  do i = 1,2*nx-1
+    firstterm = firstterm + x(i)*y(i+1)
+    secondterm = secondterm + x(i+1)*y(i)
+  enddo
+  area = 0.5*abs(firstterm - secondterm + (x(2*nx)*y(1)) - (x(1)*y(2*nx)))
+  areanew(j) = area
+
+enddo
+
+close(1)
+close(2)
+
+!-------------------------------------------------------------------------------
+!---------------- Calculating volumes ------------------------------------------
+
+volumeold = 0.
+volumenew = 0.
+do i = 1,totalpanels-1
+  volumeold = volumeold + (((areaold(i+1)+areaold(i))/2) * (zpanelpos(i+1) - zpanelpos(i)))
+  volumenew = volumenew + (((areanew(i+1)+areanew(i))/2) * (zpanelpos(i+1) - zpanelpos(i)))
+enddo
+
+
+!-------------------------------------------------------------------------------
+!--------------- Mesh Displacement ---------------------------------------------
+
+open(unit = 1, file = 'mesh_disp.dat', status = 'unknown', iostat = ierr)
+open(2,file='baseline.txt')
+open(3,file='new.txt')
+
+do k = 1,totnodes
+  flag = 0
+  do i = 1,2*nx*totalpanels
+    read(2,*) geoinput1
+    read(3,*) geoinput2
+    if ( geoinput1%ints(1) == k ) then
+      write(1,*) geoinput1%ints(1), (geoinput2%floats(1)-geoinput1%floats(1)), (geoinput2%floats(2)-geoinput1%floats(2)), (geoinput2%floats(3)-geoinput1%floats(3))
+      flag = 1
+    end if
+  enddo
+  rewind(2)
+  rewind(3)
+  if ( flag == 0 ) then
+    write(1,*) k, 0.0, 0.0, 0.0
+  end if
+enddo
+
+close(1)
+close(2)
+close(3)
 
 
 

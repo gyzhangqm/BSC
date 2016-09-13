@@ -3,23 +3,27 @@ close all;
 clc;
 format long;
 
-load dumpalll.txt
-load dumpallu.txt
+load new.txt
+load baseline.txt
 
-xu = dumpallu(:,2);
-yu = dumpallu(:,3);
-zu = dumpallu(:,4);
+xnew = new(:,2);
+ynew = new(:,3);
+znew = new(:,4);
 
-xl = dumpalll(:,2);
-yl = dumpalll(:,3);
-zl = dumpalll(:,4);
+x = baseline(:,2);
+y = baseline(:,3);
+z = baseline(:,4);
 
-size(sort(unique(zu)))
-size(sort(unique(zl)))
+figure(1)
+scatter3(x,y,z,'b.');
+axis equal tight;
 
-hold on;
-scatter3(xu,yu,zu,'b.');
-scatter3(xl,yl,zl,'r.');
+xlabel('x\rightarrow');
+ylabel('y\rightarrow');
+zlabel('z\rightarrow');
+
+figure(2)
+scatter3(xnew,ynew,znew,'b.');
 axis equal tight;
 
 xlabel('x\rightarrow');
