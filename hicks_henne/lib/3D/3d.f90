@@ -691,30 +691,49 @@ enddo
 !-------------------------------------------------------------------------------
 !--------------- Mesh Displacement ---------------------------------------------
 
+!open(unit = 1, file = 'mesh_disp.dat', status = 'unknown', iostat = ierr)
+!open(2,file='baseline.txt')
+!open(3,file='new.txt')
+
+!do k = 1,totnodes
+!  flag = 0
+!  do i = 1,2*nx*totalpanels
+!    read(2,*) geoinput1
+!    read(3,*) geoinput2
+!    if ( geoinput1%ints(1) == k ) then
+!      write(1,*) geoinput1%ints(1), (geoinput2%floats(1)-geoinput1%floats(1)), (geoinput2%floats(2)-geoinput1%floats(2)), (geoinput2%floats(3)-geoinput1%floats(3))
+!      flag = 1
+!    end if
+!  enddo
+!  rewind(3)
+!  if ( flag == 0 ) then
+!    write(1,*) k, 0.0, 0.0, 0.0
+!  end if
+!enddo
+
+!close(1)
+!close(2)
+!close(3)
+
 open(unit = 1, file = 'mesh_disp.dat', status = 'unknown', iostat = ierr)
 open(2,file='baseline.txt')
 open(3,file='new.txt')
 
-do k = 1,totnodes
-  flag = 0
-  do i = 1,2*nx*totalpanels
-    read(2,*) geoinput1
-    read(3,*) geoinput2
-    if ( geoinput1%ints(1) == k ) then
-      write(1,*) geoinput1%ints(1), (geoinput2%floats(1)-geoinput1%floats(1)), (geoinput2%floats(2)-geoinput1%floats(2)), (geoinput2%floats(3)-geoinput1%floats(3))
-      flag = 1
-    end if
-  enddo
-  rewind(2)
-  rewind(3)
-  if ( flag == 0 ) then
-    write(1,*) k, 0.0, 0.0, 0.0
+do
+  read(2,*,iostat = ierr) geoinput1
+  read(3,*,iostat = ierr) geoinput2
+  if ( ierr/=0 ) then
+    exit
   end if
+  write(1,*) geoinput1%ints(1), (geoinput2%floats(1)-geoinput1%floats(1)), (geoinput2%floats(2)-geoinput1%floats(2)), (geoinput2%floats(3)-geoinput1%floats(3))
 enddo
 
 close(1)
 close(2)
 close(3)
+
+call execute_command_line('rm baseline.txt')
+call execute_command_line('rm new.txt')
 
 
 
