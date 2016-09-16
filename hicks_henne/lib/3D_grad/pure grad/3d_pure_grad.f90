@@ -6,24 +6,17 @@ program param
     real,dimension(3)      :: floats
   endtype intreal
   type(intreal) :: geoinput, temp, geoinput1, geoinput2
-  type(intreal), dimension(:), allocatable :: panelgeoinput, panelgeoinputu, panelgeoinputl, uleft, uright, lleft, lright
-
-  type intrealgrad
-    integer,dimension(1)   :: ints
-    real(8), allocatable   :: floats(:)
-  endtype intrealgrad
-  type(intrealgrad) :: grad
-  type(intrealgrad), allocatable :: graduleft(:), graduright(:), gradlleft(:), gradlright(:)
+  type(intreal), dimension(:), allocatable :: panelgeoinput, panelgeoinputu, panelgeoinputl
 
   integer, parameter :: t_b = 4
-  real(kind = 8), parameter :: pi = acos(-1.), gamma = 0.
+  real(kind = 8), parameter :: pi = acos(-1.), gamma = 10.
   character(256) :: input, cmd, geo, fixnod, code, adjoint, gradtitle
   integer :: flagupper, flaglower, pos, nodu, nodl,  i, j, k, l, ierr, counterstart, counterend, counter, totnodes
   integer :: nx, totalpanels, pair(2), panels, ndp, leftbound, rightbound, flag, dummy
   integer, dimension(:), allocatable :: unodes, lnodes, panelflag, masterpanelno, derivativenodenou, derivativenodenol
-  real, dimension(:), allocatable :: zpos, zpanelpos, dpa(:,:), dpb(:,:), areas , x, y, derivative, lambda(:,:)
-  real, dimension(:), allocatable :: xu, yu, xl, yl, bump_pos, areagrad(:,:), graddata(:,:)
-  real, dimension(:), allocatable :: volumegrad
+  real, dimension(:), allocatable :: zpos, zpanelpos, dpa(:,:), dpb(:,:), areas, x, y, derivative, lambda(:,:)
+  real, dimension(:), allocatable :: xu, yu, xl, yl, bump_pos, xunew, areagrad(:,:), graddata(:,:)
+  real, dimension(:), allocatable :: volumegrad, graddataleft(:,:), graddataright(:,:)
   real(kind = 8) :: buffer, pairreal(2), h, scaleu, scalel, sum, m, xutrans, xltrans, firstterm, secondterm, area
   real(kind = 8) :: volume
 
@@ -271,8 +264,8 @@ close(1)
 close(2)
 
 
-call execute_command_line('rm dumpallu.txt')
-call execute_command_line('rm dumpalll.txt')
+call system('rm dumpallu.txt')
+call system('rm dumpalll.txt')
 
 
 
@@ -293,6 +286,8 @@ do i = 1,totalpanels
     j = j + 1
   end if
 enddo
+
+
 !-------------------------------------------------------------------------------
 !--------------- Sorting all the data with respect to x ------------------------
 
@@ -354,8 +349,8 @@ enddo
 close(1)
 close(2)
 
-call execute_command_line('rm dumpall_u.txt')
-call execute_command_line('rm dumpall_l.txt')
+call system('rm dumpall_u.txt')
+call system('rm dumpall_l.txt')
 
 !-------------------------------------------------------------------------------
 !--------------- Reading des_vars.dat ------------------------------------------
@@ -442,8 +437,8 @@ close(2)
 open(1,file='tobeupdatedpanelsu.txt')
 open(2,file='tobeupdatedpanelsl.txt')
 
-open(5,file='gradu.txt')
-open(6,file='gradl.txt')
+open(3,file='gradu.txt')
+open(4,file='gradl.txt')
 
 do k = 1,panels
   do j = 1,nx
@@ -471,25 +466,23 @@ do k = 1,panels
   xl = xl - xltrans
 
   do i = 1,nx
-    sum = 0.
     derivative = 0.
     do j = 1,ndp
         m = log(0.5)/log(bump_pos(j))
         derivative((2*(k-1)*ndp)+j) = (sin(pi*xu(i)**m)**t_b)
     enddo
-    write(5,*) derivativenodenou(i), derivative
+    write(3,*) derivativenodenou(i), derivative
     xu(i) = xu(i) + xutrans
     xu(i) = xu(i) * scaleu
   enddo
 
   do i = 1,nx
-    sum = 0.
     derivative = 0.
     do j = 1,ndp
         m = log(0.5)/log(bump_pos(j))
         derivative((2*(k-1)*ndp)+ ndp + j) = (sin(pi*xl(i)**m)**t_b)
     enddo
-    write(6,*) derivativenodenol(i), derivative
+    write(4,*) derivativenodenol(i), derivative
     xl(i) = xl(i) + xltrans
     xl(i) = xl(i) * scalel
   enddo
@@ -498,11 +491,12 @@ do k = 1,panels
 enddo
 close(1)
 close(2)
-close(5)
-close(6)
 
-call execute_command_line('rm tobeupdatedpanelsu.txt')
-call execute_command_line('rm tobeupdatedpanelsl.txt')
+close(3)
+close(4)
+
+call system('rm tobeupdatedpanelsu.txt')
+call system('rm tobeupdatedpanelsl.txt')
 
 
 !-------------------------------------------------------------------------------
@@ -527,12 +521,12 @@ close(1)
 close(2)
 close(3)
 
-
 !-------------------------------------------------------------------------------
 !------------------ Area Calculation of each panel -----------------------------
 
 
 allocate(areas(totalpanels))
+
 
 allocate(x(2*nx))
 allocate(y(2*nx))
@@ -540,7 +534,6 @@ allocate(y(2*nx))
 open(1,file='baseline.txt')
 
 do j = 1,totalpanels
-  !---- old areas
   do k = 1,2*nx
     read(1,*)geoinput
     x(k) = geoinput%floats(1)
@@ -559,7 +552,6 @@ do j = 1,totalpanels
 enddo
 
 close(1)
-close(2)
 
 !-------------------------------------------------------------------------------
 !---------------- Calculating volumes ------------------------------------------
@@ -573,17 +565,8 @@ enddo
 !-------------------------------------------------------------------------------
 !------------- Gradient Interpolation ------------------------------------------
 
-allocate(grad%floats(panels*2*ndp))
-allocate(graduleft(nx))
-allocate(graduright(nx))
-allocate(gradlleft(nx))
-allocate(gradlright(nx))
-do k = 1,nx
-  allocate(graduleft(k)%floats(panels*2*ndp))
-  allocate(gradlleft(k)%floats(panels*2*ndp))
-  allocate(graduright(k)%floats(panels*2*ndp))
-  allocate(gradlright(k)%floats(panels*2*ndp))
-enddo
+allocate(graddataleft(nx,panels*2*ndp))
+allocate(graddataright(nx,panels*2*ndp))
 
 
 open(1,file='dumpallu.txt',status='old',iostat=ierr)
@@ -592,16 +575,11 @@ open(3,file='gradallu.txt')
 
 do k = 1,nx
   read(1,*)
-  !read(2,*) graduleft(k)
-  read(2,*) dummy, derivative
-  graduleft(k)%ints = dummy
-  graduleft(k)%floats = derivative
-  write(3,*) graduleft(k)%ints, graduleft(k)%floats
+  read(2,*) dummy, graddataleft(k,:)
+  write(3,*) dummy, graddataleft(k,:)
 enddo
 do k = 1,nx
-  read(2,*) dummy, derivative
-  graduright(k)%ints = dummy
-  graduright(k)%floats = derivative
+  read(2,*) dummy, graddataright(k,:)
 enddo
 
 do j = 1,panels-1
@@ -609,22 +587,18 @@ do j = 1,panels-1
     do k = 1,nx
       read(1,*) geoinput
       derivative = 0.
-      do l = 1,panels*2*ndp
-        derivative(l) = graduleft(k)%floats(l) + (graduright(k)%floats(l) - graduleft(k)%floats(l))*((geoinput%floats(3) - zpanelpos(i))/(zpanelpos(masterpanelno(j+1)) - zpanelpos(masterpanelno(j))))
-      enddo
+      derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(j)))/(zpanelpos(masterpanelno(j+1)) - zpanelpos(masterpanelno(j))))
       write(3,*) geoinput%ints(1), derivative
     enddo
   enddo
 
   do k = 1,nx
-    read(1,*)
-    write(3,*) graduright(k)%ints, graduright(k)%floats
+    read(1,*) geoinput
+    write(3,*) geoinput%ints(1), graddataright(k,:)
+    graddataleft(k,:) = graddataright(k,:)
   enddo
-  graduleft = graduright
   do k = 1,nx
-    read(2,*, iostat = ierr) dummy, derivative
-    graduright(k)%ints = dummy
-    graduright(k)%floats = derivative
+    read(2,*, iostat = ierr) dummy, graddataright(k,:)
   enddo
 enddo
 
@@ -638,15 +612,11 @@ open(3,file='gradalll.txt')
 
 do k = 1,nx
   read(1,*)
-  read(2,*) dummy, derivative
-  gradlleft(k)%ints = dummy
-  gradlleft(k)%floats = derivative
-  write(3,*) gradlleft(k)%ints, gradlleft(k)%floats
+  read(2,*) dummy, graddataleft(k,:)
+  write(3,*) dummy, graddataleft(k,:)
 enddo
 do k = 1,nx
-  read(2,*) dummy, derivative
-  gradlright(k)%ints = dummy
-  gradlright(k)%floats = derivative
+  read(2,*) dummy, graddataright(k,:)
 enddo
 
 do j = 1,panels-1
@@ -654,22 +624,18 @@ do j = 1,panels-1
     do k = 1,nx
       read(1,*) geoinput
       derivative = 0.
-      do l = 1,panels*2*ndp
-        derivative(l) = gradlleft(k)%floats(l) + (gradlright(k)%floats(l) - gradlleft(k)%floats(l))*((geoinput%floats(3) - zpanelpos(i))/(zpanelpos(masterpanelno(j+1)) - zpanelpos(masterpanelno(j))))
-      enddo
+      derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(j)))/(zpanelpos(masterpanelno(j+1)) - zpanelpos(masterpanelno(j))))
       write(3,*) geoinput%ints(1), derivative
     enddo
   enddo
 
   do k = 1,nx
-    read(1,*)
-    write(3,*) gradlright(k)%ints, gradlright(k)%floats
+    read(1,*) geoinput
+    write(3,*) geoinput%ints(1), graddataright(k,:)
+    graddataleft(k,:) = graddataright(k,:)
   enddo
-  gradlleft = gradlright
   do k = 1,nx
-    read(2,*, iostat = ierr) dummy, derivative
-    gradlright(k)%ints = dummy
-    gradlright(k)%floats = derivative
+    read(2,*, iostat = ierr) dummy, graddataright(k,:)
   enddo
 enddo
 
@@ -723,7 +689,7 @@ do i = 1,totalpanels
       firstterm = firstterm + x(j)*graddata(j+1,k)
       secondterm = secondterm + x(j+1)*graddata(j,k)
     enddo
-    area = 0.5*abs(firstterm - secondterm + (x(2*nx)*graddata(1,k)) - (x(1)*graddata(2*nx,k)))
+    area = 0.5*(firstterm - secondterm + (x(2*nx)*graddata(1,k)) - (x(1)*graddata(2*nx,k)))
     areagrad(i,k) = area
   enddo
 enddo
@@ -814,25 +780,18 @@ write(1,*)buffer + (gamma*0.5*(volume-0.5)**2)
 !-------------------------------------------------------------------------------
 !-------------------------------------------------------------------------------
 
-!print *,panels, 'no of master panels'
-!print *,totalpanels, 'total no of panels'
-!print *,ndp, 'ndp'
-!print *,2*ndp*panels, 'total no of design parameters'
-!print *,totnodes, 'total no of nodes'
-!print *,nx, 'nx'
-!print *,nodu, 'nodu'
-!print *,nodl, 'nodl'
+
+call system('rm dumpallu.txt')
+call system('rm dumpalll.txt')
+call system('rm gradu.txt')
+call system('rm gradl.txt')
+call system('rm gradallu.txt')
+call system('rm gradalll.txt')
+call system('rm afterdottingwithlambda.txt')
+call system('rm allgrad.txt')
+call system('rm baseline.txt')
 
 
-call execute_command_line('rm dumpallu.txt')
-call execute_command_line('rm dumpalll.txt')
-call execute_command_line('rm gradu.txt')
-call execute_command_line('rm gradl.txt')
-call execute_command_line('rm gradallu.txt')
-call execute_command_line('rm gradalll.txt')
-call execute_command_line('rm afterdottingwithlambda.txt')
-call execute_command_line('rm allgrad.txt')
-call execute_command_line('rm baseline.txt')
 
 
 

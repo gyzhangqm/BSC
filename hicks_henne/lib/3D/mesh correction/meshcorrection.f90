@@ -91,9 +91,8 @@ counter = 0
 i = 1
 j = 1
 
-open(2,file = 'dump/dumpall.txt')
 open(1,file=geo,status='old',iostat=ierr)
-open(3,file = 'corrected.geo.dat')
+open(3,file = trim(cmd)//'_corrected.geo.dat')
 do while (ierr.eq.0)
   read(1,'(A)',iostat=ierr) input
   counter = counter + 1
@@ -121,7 +120,6 @@ do l = counterstart,counterend
         buffer = geoinput%floats(3)*10**zprecision
         bufferreal = buffer
         bufferreal = bufferreal/10**zprecision
-        write(2,*) geoinput%ints(1), geoinput%floats(1), geoinput%floats(2), bufferreal
         write(3,*) geoinput%ints(1), geoinput%floats(1), geoinput%floats(2), bufferreal
         flag = 1
       end if
@@ -131,7 +129,6 @@ do l = counterstart,counterend
         buffer = geoinput%floats(3)*10**zprecision
         bufferreal = buffer
         bufferreal = bufferreal/10**zprecision
-        write(2,*) geoinput%ints(1), geoinput%floats(1), geoinput%floats(2), bufferreal
         write(3,*) geoinput%ints(1), geoinput%floats(1), geoinput%floats(2), bufferreal
         flag = 1
       end if
@@ -149,15 +146,8 @@ enddo
 
 
 close(1)
-close(2)
 close(3)
 totnodes = counterend - counterstart +1
-
-cmd = 'rm '//geo
-call execute_command_line(cmd)
-cmd = 'mv corrected.geo.dat '//geo
-call execute_command_line(cmd)
-
 
 
 

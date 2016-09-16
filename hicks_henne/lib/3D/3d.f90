@@ -262,8 +262,8 @@ close(1)
 close(2)
 
 
-call execute_command_line('rm dumpallu.txt')
-call execute_command_line('rm dumpalll.txt')
+call system('rm dumpallu.txt')
+call system('rm dumpalll.txt')
 
 
 
@@ -345,8 +345,8 @@ enddo
 close(1)
 close(2)
 
-call execute_command_line('rm dumpall_u.txt')
-call execute_command_line('rm dumpall_l.txt')
+call system('rm dumpall_u.txt')
+call system('rm dumpall_l.txt')
 
 !-------------------------------------------------------------------------------
 !--------------- Reading des_vars.dat ------------------------------------------
@@ -491,8 +491,8 @@ close(2)
 close(3)
 close(4)
 
-call execute_command_line('rm tobeupdatedpanelsu.txt')
-call execute_command_line('rm tobeupdatedpanelsl.txt')
+call system('rm tobeupdatedpanelsu.txt')
+call system('rm tobeupdatedpanelsl.txt')
 
 
 !-------------------------------------------------------------------------------
@@ -577,8 +577,8 @@ close(1)
 close(2)
 close(3)
 
-call execute_command_line('rm updatedpanelu.txt')
-call execute_command_line('rm updatedpanell.txt')
+call system('rm updatedpanelu.txt')
+call system('rm updatedpanell.txt')
 
 !-------------------------------------------------------------------------------
 !---------------- Concatenation ------------------------------------------------
@@ -621,10 +621,10 @@ close(1)
 close(2)
 close(3)
 
-call execute_command_line('rm dumpallu.txt')
-call execute_command_line('rm dumpalll.txt')
-call execute_command_line('rm dumpupdatedu.txt')
-call execute_command_line('rm dumpupdatedl.txt')
+call system('rm dumpallu.txt')
+call system('rm dumpalll.txt')
+call system('rm dumpupdatedu.txt')
+call system('rm dumpupdatedl.txt')
 
 !-------------------------------------------------------------------------------
 !------------------ Area Calculation of each panel -----------------------------
@@ -732,8 +732,8 @@ close(1)
 close(2)
 close(3)
 
-call execute_command_line('rm baseline.txt')
-call execute_command_line('rm new.txt')
+call system('rm baseline.txt')
+call system('rm new.txt')
 
 
 
