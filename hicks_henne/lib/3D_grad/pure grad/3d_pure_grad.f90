@@ -9,7 +9,7 @@ program param
   type(intreal), dimension(:), allocatable :: panelgeoinput, panelgeoinputu, panelgeoinputl
 
   integer, parameter :: t_b = 4
-  real(kind = 8), parameter :: pi = acos(-1.), gamma = 10.
+  real(kind = 8), parameter :: pi = acos(-1.), gamma = 100.
   character(256) :: input, cmd, geo, fixnod, code, adjoint, gradtitle
   integer :: flagupper, flaglower, pos, nodu, nodl,  i, j, k, l, ierr, counterstart, counterend, counter, totnodes
   integer :: nx, totalpanels, pair(2), panels, ndp, leftbound, rightbound, flag, dummy
@@ -165,6 +165,7 @@ enddo
 close(1)
 nx = counter
 totalpanels = nodu/nx
+
 
 do i = 1,panels
   do j = 1,panels
@@ -781,8 +782,8 @@ write(1,*)buffer + (gamma*0.5*(volume-0.5)**2)
 !-------------------------------------------------------------------------------
 
 
-call system('rm dumpallu.txt')
-call system('rm dumpalll.txt')
+!call system('rm dumpallu.txt')
+!call system('rm dumpalll.txt')
 call system('rm gradu.txt')
 call system('rm gradl.txt')
 call system('rm gradallu.txt')

@@ -110,7 +110,7 @@ rewind(1)
 
 do l = 1,counterstart-1
   read(1,'(a)') input
-  write(3,*) trim(input)
+  write(3,'(a)') trim(input)
 end do
 do l = counterstart,counterend
   flag = 0
@@ -141,7 +141,7 @@ end do
 ierr = 0
 do while (ierr.eq.0)
   read(1,'(A)',iostat=ierr) input
-  write(3,*) trim(input)
+  write(3,'(a)') trim(input)
 enddo
 
 
