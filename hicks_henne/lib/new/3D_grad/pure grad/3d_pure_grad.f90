@@ -6,16 +6,16 @@ program param
     real,dimension(3)      :: floats
   endtype intreal
   type(intreal) :: geoinput, temp, geoinput1, geoinput2
-  type(intreal), dimension(:), allocatable :: panelgeoinput, panelgeoinputu, panelgeoinputl
+  type(intreal), dimension(:), allocatable :: panelgeoinput, panelgeoinputu, panelgeoinputl, uleft, uright, lleft, lright
 
   integer, parameter :: t_b = 4
-  real(kind = 8), parameter :: pi = acos(-1.), gamma = 100.
+  real(kind = 8), parameter :: pi = acos(-1.), gamma = 0.
   character(256) :: input, cmd, geo, fixnod, code, adjoint, gradtitle
   integer :: flagupper, flaglower, pos, nodu, nodl,  i, j, k, l, ierr, counterstart, counterend, counter, totnodes
-  integer :: nx, totalpanels, pair(2), panels, ndp, leftbound, rightbound, flag, dummy
+  integer :: nx, nl, totalpanels, pair(2), panels, ndp, leftbound, rightbound, flag, dummy
   integer, dimension(:), allocatable :: unodes, lnodes, panelflag, masterpanelno, derivativenodenou, derivativenodenol
   real, dimension(:), allocatable :: zpos, zpanelpos, dpa(:,:), dpb(:,:), areas, x, y, derivative, lambda(:,:)
-  real, dimension(:), allocatable :: xu, yu, xl, yl, bump_pos, xunew, areagrad(:,:), graddata(:,:)
+  real, dimension(:), allocatable :: xu, yu, xl, yl, bump_pos, areagrad(:,:), graddata(:,:)
   real, dimension(:), allocatable :: volumegrad, graddataleft(:,:), graddataright(:,:)
   real(kind = 8) :: buffer, pairreal(2), h, scaleu, scalel, sum, m, xutrans, xltrans, firstterm, secondterm, area
   real(kind = 8) :: volume
@@ -108,10 +108,10 @@ open(1,file=geo,status='old',iostat=ierr)
 do while (ierr.eq.0)
   read(1,'(A)',iostat=ierr) input
   counter = counter + 1
-  if ( trim(input) == ' COORDINATES' ) then
+  if ( trim(input) == 'COORDINATES' ) then
     counterstart = counter + 1
   end if
-  if ( trim(input) == ' END_COORDINATES' ) then
+  if ( trim(input) == 'END_COORDINATES' ) then
     counterend = counter - 1
   end if
 enddo
@@ -146,46 +146,22 @@ open(1,file = 'panel_data.dat')
 read(1,'(a)') input
 input = trim(input)
 pos = index(input,":")
+read(input(pos+1:), *) totalpanels
+read(1,'(a)') input
+input = trim(input)
+pos = index(input,":")
 read(input(pos+1:), *) panels
 read(1,'(a)') input
+
 allocate(zpos(panels))
-do i = 1,panels
-  read(1,*) zpos(i)
-enddo
-close(1)
-
-open(1,file = 'dumpallu.txt', iostat=ierr)
-counter = 0
-do while (ierr .eq. 0)
-  read(1,*,iostat=ierr) geoinput
-  if ( geoinput%floats(3) == zpos(1) ) then
-    counter = counter + 1
-  end if
-enddo
-close(1)
-nx = counter
-totalpanels = nodu/nx
-
-
-do i = 1,panels
-  do j = 1,panels
-    if ( i == j ) then
-    else
-      if ( zpos(j) .gt. zpos(i) ) then
-        buffer = zpos(i)
-        zpos(i) = zpos(j)
-        zpos(j) = buffer
-      end if
-    end if
-  enddo
-enddo
-
-!-------------------------------------------------------------------------------
-!---------------- Extracting data ----------------------------------------------
-
+allocate(masterpanelno(panels))
 allocate(zpanelpos(totalpanels))
 allocate(panelflag(totalpanels))
 
+do i = 1,panels
+  read(1,*) masterpanelno(i)
+enddo
+close(1)
 
 open(1,file = 'dumpallu.txt', iostat=ierr)
 read(1,*,iostat=ierr) geoinput
@@ -219,6 +195,37 @@ do i = 1,totalpanels
     end if
   enddo
 enddo
+
+panelflag = 0
+do k = 1,panels
+  zpos(k) = zpanelpos(masterpanelno(k))
+  panelflag(masterpanelno(k)) = 1
+enddo
+
+open(1,file = 'dumpallu.txt', iostat=ierr)
+counter = 0
+do while (ierr .eq. 0)
+  read(1,*,iostat=ierr) geoinput
+  if ( geoinput%floats(3) == zpos(1) ) then
+    counter = counter + 1
+  end if
+enddo
+close(1)
+nx = counter
+open(1,file = 'dumpalll.txt', iostat=ierr)
+counter = 0
+do while (ierr .eq. 0)
+  read(1,*,iostat=ierr) geoinput
+  if ( geoinput%floats(3) == zpos(1) ) then
+    counter = counter + 1
+  end if
+enddo
+close(1)
+nl = counter
+
+
+!-------------------------------------------------------------------------------
+!---------------- Extracting data ----------------------------------------------
 
 
 open(1,file = 'dumpallu.txt', iostat=ierr)
@@ -269,26 +276,6 @@ call system('rm dumpallu.txt')
 call system('rm dumpalll.txt')
 
 
-
-do i = 1,totalpanels
-  panelflag(i) = 0
-  do j = 1,panels
-    if ( zpanelpos(i) == zpos(j) ) then
-      panelflag(i) = 1
-    end if
-  enddo
-enddo
-
-allocate(masterpanelno(panels))
-j = 1
-do i = 1,totalpanels
-  if ( panelflag(i) == 1 ) then
-    masterpanelno(j) = i
-    j = j + 1
-  end if
-enddo
-
-
 !-------------------------------------------------------------------------------
 !--------------- Sorting all the data with respect to x ------------------------
 
@@ -322,16 +309,19 @@ enddo
 close(1)
 close(2)
 
+deallocate(panelgeoinput)
+allocate(panelgeoinput(nl))
+
 open(1,file = 'dumpall_l.txt', iostat=ierr)
 open(2,file = 'dumpalll.txt')
 
 do i = 1,totalpanels
-  do j = 1,nx
+  do j = 1,nl
     read(1,*,iostat=ierr) panelgeoinput(j)
   enddo
 
-  do k = 1,nx
-    do l = 1,nx
+  do k = 1,nl
+    do l = 1,nl
       if ( k == l ) then
       else
         if ( panelgeoinput(l)%floats(1) .gt. panelgeoinput(k)%floats(1) ) then
@@ -343,7 +333,7 @@ do i = 1,totalpanels
     enddo
   enddo
 
-  do k = 1,nx
+  do k = 1,nl
     write(2,*) panelgeoinput(k)
   enddo
 enddo
@@ -385,17 +375,17 @@ close(1)
 !-------------------------------------------------------------------------------
 !----------------------- Hicks henne update ------------------------------------
 allocate(panelgeoinputu(nx))
-allocate(panelgeoinputl(nx))
+allocate(panelgeoinputl(nl))
 allocate(bump_pos(ndp))
 
 allocate(xu(nx))
 allocate(yu(nx))
-allocate(xl(nx))
-allocate(yl(nx))
+allocate(xl(nl))
+allocate(yl(nl))
 
 
 allocate(derivativenodenou(nx))
-allocate(derivativenodenol(nx))
+allocate(derivativenodenol(nl))
 allocate(derivative(2*ndp*panels))
 
 
@@ -444,14 +434,16 @@ open(4,file='gradl.txt')
 do k = 1,panels
   do j = 1,nx
     read(1,*,iostat=ierr) panelgeoinputu(j)
-    read(2,*) panelgeoinputl(j)
     xu(j) = panelgeoinputu(j)%floats(1)
     yu(j) = panelgeoinputu(j)%floats(2)
     derivativenodenou(j) = panelgeoinputu(j)%ints(1)
+
+  enddo
+  do j = 1,nl
+    read(2,*) panelgeoinputl(j)
     xl(j) = panelgeoinputl(j)%floats(1)
     yl(j) = panelgeoinputl(j)%floats(2)
     derivativenodenol(j) = panelgeoinputl(j)%ints(1)
-
   enddo
 
   scaleu = abs(maxval(xu) - minval(xu))
@@ -477,7 +469,7 @@ do k = 1,panels
     xu(i) = xu(i) * scaleu
   enddo
 
-  do i = 1,nx
+  do i = 1,nl
     derivative = 0.
     do j = 1,ndp
         m = log(0.5)/log(bump_pos(j))
@@ -488,11 +480,9 @@ do k = 1,panels
     xl(i) = xl(i) * scalel
   enddo
 
-
 enddo
 close(1)
 close(2)
-
 close(3)
 close(4)
 
@@ -512,7 +502,7 @@ do i = 1,totalpanels
     read(2,*) geoinput
     write(1,*) geoinput
   enddo
-  do k = 1,nx
+  do k = 1,nl
     read(3,*) geoinput
     write(1,*) geoinput
   enddo
@@ -528,14 +518,14 @@ close(3)
 
 allocate(areas(totalpanels))
 
-
-allocate(x(2*nx))
-allocate(y(2*nx))
+allocate(x(nx+nl))
+allocate(y(nx+nl))
 
 open(1,file='baseline.txt')
 
 do j = 1,totalpanels
-  do k = 1,2*nx
+  !---- old areas
+  do k = 1,nx+nl
     read(1,*)geoinput
     x(k) = geoinput%floats(1)
     y(k) = geoinput%floats(2)
@@ -543,16 +533,18 @@ do j = 1,totalpanels
 
   firstterm = 0.
   secondterm = 0.
-  do i = 1,2*nx-1
+  do i = 1,nx+nl-1
     firstterm = firstterm + x(i)*y(i+1)
     secondterm = secondterm + x(i+1)*y(i)
   enddo
-  area = 0.5*abs(firstterm - secondterm + (x(2*nx)*y(1)) - (x(1)*y(2*nx)))
+  area = 0.5*abs(firstterm - secondterm + (x(nx+nl)*y(1)) - (x(1)*y(nx+nl)))
   areas(j) = area
 
 enddo
 
 close(1)
+
+
 
 !-------------------------------------------------------------------------------
 !---------------- Calculating volumes ------------------------------------------
@@ -574,8 +566,10 @@ open(1,file='dumpallu.txt',status='old',iostat=ierr)
 open(2,file='gradu.txt')
 open(3,file='gradallu.txt')
 
-do k = 1,nx
+do k = 1,nx*masterpanelno(1)
   read(1,*)
+enddo
+do k = 1,nx
   read(2,*) dummy, graddataleft(k,:)
   write(3,*) dummy, graddataleft(k,:)
 enddo
@@ -606,23 +600,30 @@ enddo
 close(1)
 close(2)
 close(3)
+
+deallocate(graddataleft)
+deallocate(graddataright)
+allocate(graddataleft(nl,panels*2*ndp))
+allocate(graddataright(nl,panels*2*ndp))
 
 open(1,file='dumpalll.txt',status='old',iostat=ierr)
 open(2,file='gradl.txt')
 open(3,file='gradalll.txt')
 
-do k = 1,nx
+do k = 1,nl*masterpanelno(1)
   read(1,*)
+enddo
+do k = 1,nl
   read(2,*) dummy, graddataleft(k,:)
   write(3,*) dummy, graddataleft(k,:)
 enddo
-do k = 1,nx
+do k = 1,nl
   read(2,*) dummy, graddataright(k,:)
 enddo
 
 do j = 1,panels-1
   do i = masterpanelno(j)+1,masterpanelno(j+1)-1
-    do k = 1,nx
+    do k = 1,nl
       read(1,*) geoinput
       derivative = 0.
       derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(j)))/(zpanelpos(masterpanelno(j+1)) - zpanelpos(masterpanelno(j))))
@@ -630,12 +631,12 @@ do j = 1,panels-1
     enddo
   enddo
 
-  do k = 1,nx
+  do k = 1,nl
     read(1,*) geoinput
     write(3,*) geoinput%ints(1), graddataright(k,:)
     graddataleft(k,:) = graddataright(k,:)
   enddo
-  do k = 1,nx
+  do k = 1,nl
     read(2,*, iostat = ierr) dummy, graddataright(k,:)
   enddo
 enddo
@@ -644,19 +645,145 @@ close(1)
 close(2)
 close(3)
 
+deallocate(graddataleft)
+deallocate(graddataright)
+
+
+!-------------------------------------------------------------------------------
+!---------- Gradient Extrapolation ---------------------------------------------
+
+allocate(graddataright(nx,panels*2*ndp))
+allocate(graddataleft(nx,panels*2*ndp))
+
+open(1,file='dumpallu.txt',status='old',iostat=ierr)
+open(2,file='gradallu.txt')
+open(3,file='extrapolatedgradu.txt')
+open(4,file='gradu.txt')
+
+do k = 1,nx
+  read(4,*) dummy, graddataleft(k,:)
+enddo
+do k = 1,nx
+  read(4,*) dummy, graddataright(k,:)
+enddo
+do i = 1,masterpanelno(1)-1
+  do k = 1,nx
+    read(1,*) geoinput
+    derivative = 0.
+    derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(1)))/(zpanelpos(masterpanelno(2)) - zpanelpos(masterpanelno(1))))
+    write(3,*) geoinput%ints(1), derivative
+  enddo
+enddo
+
+do
+  read(2,*,iostat = ierr) dummy, derivative
+  if ( ierr .ne. 0 ) then
+    exit
+  end if
+  read(1,*)
+  write(3,*) dummy, derivative
+enddo
+rewind(4)
+do i = 1,panels-2
+  do k = 1,nx
+    read(4,*)
+  enddo
+enddo
+do k = 1,nx
+  read(4,*) dummy, graddataleft(k,:)
+enddo
+do k = 1,nx
+  read(4,*) dummy, graddataright(k,:)
+enddo
+do i = masterpanelno(panels)+1,totalpanels
+  do k = 1,nx
+    read(1,*) geoinput
+    derivative = 0.
+    derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(panels-1)))/(zpanelpos(masterpanelno(panels)) - zpanelpos(masterpanelno(panels-1))))
+    write(3,*) geoinput%ints(1), derivative
+  enddo
+enddo
+
+
+close(1)
+close(2)
+close(3)
+close(4)
+deallocate(graddataleft)
+deallocate(graddataright)
+
+allocate(graddataright(nl,panels*2*ndp))
+allocate(graddataleft(nl,panels*2*ndp))
+
+open(1,file='dumpalll.txt',status='old',iostat=ierr)
+open(2,file='gradalll.txt')
+open(3,file='extrapolatedgradl.txt')
+open(4,file='gradl.txt')
+
+do k = 1,nl
+  read(4,*) dummy, graddataleft(k,:)
+enddo
+do k = 1,nl
+  read(4,*) dummy, graddataright(k,:)
+enddo
+do i = 1,masterpanelno(1)-1
+  do k = 1,nl
+    read(1,*) geoinput
+    derivative = 0.
+    derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(1)))/(zpanelpos(masterpanelno(2)) - zpanelpos(masterpanelno(1))))
+    write(3,*) geoinput%ints(1), derivative
+  enddo
+enddo
+do
+  read(2,*,iostat = ierr) dummy, derivative
+  if ( ierr .ne. 0 ) then
+    exit
+  end if
+  read(1,*)
+  write(3,*) dummy, derivative
+enddo
+rewind(4)
+do i = 1,panels-2
+  do k = 1,nl
+    read(4,*)
+  enddo
+enddo
+do k = 1,nl
+  read(4,*) dummy, graddataleft(k,:)
+enddo
+do k = 1,nl
+  read(4,*) dummy, graddataright(k,:)
+enddo
+do i = masterpanelno(panels)+1,totalpanels
+  do k = 1,nl
+    read(1,*) geoinput
+    derivative = 0.
+    derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(panels-1)))/(zpanelpos(masterpanelno(panels)) - zpanelpos(masterpanelno(panels-1))))
+    write(3,*) geoinput%ints(1), derivative
+  enddo
+enddo
+
+
+close(1)
+close(2)
+close(3)
+close(4)
+deallocate(graddataleft)
+deallocate(graddataright)
+
 !-------------------------------------------------------------------------------
 !---------------- Gradient Concatenation ---------------------------------------
 
 open(1,file='allgrad.txt')
-open(2,file='gradallu.txt')
-open(3,file='gradalll.txt')
+open(2,file='extrapolatedgradu.txt')
+open(3,file='extrapolatedgradl.txt')
 
 do i = 1,totalpanels
   do k = 1,nx
     read(2,*) dummy,derivative
     write(1,*) dummy,derivative
   enddo
-  do k = 1,nx
+  do k = 1,nl
     read(3,*) dummy,derivative
     write(1,*) dummy,derivative
   enddo
@@ -671,13 +798,13 @@ close(3)
 !-------------- and Volume gradient Calculation --------------------------------
 
 allocate(areagrad(totalpanels,panels*2*ndp))
-allocate(graddata(2*nx,panels*2*ndp))
+allocate(graddata(nx+nl,panels*2*ndp))
 
 open(1,file='allgrad.txt')
 open(2,file='baseline.txt')
 
 do i = 1,totalpanels
-  do j = 1,2*nx
+  do j = 1,nx+nl
     read(1,*)dummy, derivative
     graddata(j,:) = derivative
     read(2,*) geoinput
@@ -686,11 +813,11 @@ do i = 1,totalpanels
   do k = 1,panels*2*ndp
     firstterm = 0.
     secondterm = 0.
-    do j = 1,2*nx-1
+    do j = 1,nx+nl-1
       firstterm = firstterm + x(j)*graddata(j+1,k)
       secondterm = secondterm + x(j+1)*graddata(j,k)
     enddo
-    area = 0.5*(firstterm - secondterm + (x(2*nx)*graddata(1,k)) - (x(1)*graddata(2*nx,k)))
+    area = 0.5*(firstterm - secondterm + (x(nx+nl)*graddata(1,k)) - (x(1)*graddata(nx+nl,k)))
     areagrad(i,k) = area
   enddo
 enddo
@@ -753,7 +880,7 @@ close(2)
 
 open(1,file='afterdottingwithlambda.txt',iostat = ierr)
 open(2,file=gradtitle)
-
+write(2,*) 'START'
 do i = 1,panels*2*ndp
   sum = 0.
   do
@@ -763,10 +890,10 @@ do i = 1,panels*2*ndp
     end if
     sum = sum + derivative(i)
   enddo
-  write(2,*)i,sum + gamma*(volume-0.5)*volumegrad(i)
+  write(2,*)sum + gamma*(volume-0.5)*volumegrad(i)
   rewind(1)
 enddo
-
+write(2,*) 'END'
 close(1)
 close(2)
 
@@ -781,9 +908,8 @@ write(1,*)buffer + (gamma*0.5*(volume-0.5)**2)
 !-------------------------------------------------------------------------------
 !-------------------------------------------------------------------------------
 
-
-!call system('rm dumpallu.txt')
-!call system('rm dumpalll.txt')
+call system('rm dumpallu.txt')
+call system('rm dumpalll.txt')
 call system('rm gradu.txt')
 call system('rm gradl.txt')
 call system('rm gradallu.txt')
@@ -791,11 +917,8 @@ call system('rm gradalll.txt')
 call system('rm afterdottingwithlambda.txt')
 call system('rm allgrad.txt')
 call system('rm baseline.txt')
-
-
-
-
-
+call system('rm extrapolatedgradu.txt')
+call system('rm extrapolatedgradl.txt')
 
 
 

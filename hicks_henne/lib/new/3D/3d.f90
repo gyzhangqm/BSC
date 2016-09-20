@@ -144,56 +144,22 @@ open(1,file = 'panel_data.dat')
 read(1,'(a)') input
 input = trim(input)
 pos = index(input,":")
+read(input(pos+1:), *) totalpanels
+read(1,'(a)') input
+input = trim(input)
+pos = index(input,":")
 read(input(pos+1:), *) panels
 read(1,'(a)') input
+
 allocate(zpos(panels))
-do i = 1,panels
-  read(1,*) zpos(i)
-enddo
-close(1)
-
-open(1,file = 'dumpallu.txt', iostat=ierr)
-counter = 0
-do while (ierr .eq. 0)
-  read(1,*,iostat=ierr) geoinput
-  if ( geoinput%floats(3) == zpos(1) ) then
-    counter = counter + 1
-  end if
-enddo
-close(1)
-nx = counter
-totalpanels = nodu/nx
-open(1,file = 'dumpalll.txt', iostat=ierr)
-counter = 0
-do while (ierr .eq. 0)
-  read(1,*,iostat=ierr) geoinput
-  if ( geoinput%floats(3) == zpos(1) ) then
-    counter = counter + 1
-  end if
-enddo
-close(1)
-nl = counter
-
-do i = 1,panels
-  do j = 1,panels
-    if ( i == j ) then
-    else
-      if ( zpos(j) .gt. zpos(i) ) then
-        buffer = zpos(i)
-        zpos(i) = zpos(j)
-        zpos(j) = buffer
-      end if
-    end if
-  enddo
-enddo
-
-
-!-------------------------------------------------------------------------------
-!---------------- Extracting data ----------------------------------------------
-
+allocate(masterpanelno(panels))
 allocate(zpanelpos(totalpanels))
 allocate(panelflag(totalpanels))
 
+do i = 1,panels
+  read(1,*) masterpanelno(i)
+enddo
+close(1)
 
 open(1,file = 'dumpallu.txt', iostat=ierr)
 read(1,*,iostat=ierr) geoinput
@@ -227,6 +193,38 @@ do i = 1,totalpanels
     end if
   enddo
 enddo
+
+panelflag = 0
+do k = 1,panels
+  zpos(k) = zpanelpos(masterpanelno(k))
+  panelflag(masterpanelno(k)) = 1
+enddo
+
+open(1,file = 'dumpallu.txt', iostat=ierr)
+counter = 0
+do while (ierr .eq. 0)
+  read(1,*,iostat=ierr) geoinput
+  if ( geoinput%floats(3) == zpos(1) ) then
+    counter = counter + 1
+  end if
+enddo
+close(1)
+nx = counter
+open(1,file = 'dumpalll.txt', iostat=ierr)
+counter = 0
+do while (ierr .eq. 0)
+  read(1,*,iostat=ierr) geoinput
+  if ( geoinput%floats(3) == zpos(1) ) then
+    counter = counter + 1
+  end if
+enddo
+close(1)
+nl = counter
+
+
+!-------------------------------------------------------------------------------
+!---------------- Extracting data ----------------------------------------------
+
 
 open(1,file = 'dumpallu.txt', iostat=ierr)
 open(2,file = 'dumpall_u.txt')
@@ -276,24 +274,6 @@ call system('rm dumpallu.txt')
 call system('rm dumpalll.txt')
 
 
-
-do i = 1,totalpanels
-  panelflag(i) = 0
-  do j = 1,panels
-    if ( zpanelpos(i) == zpos(j) ) then
-      panelflag(i) = 1
-    end if
-  enddo
-enddo
-
-allocate(masterpanelno(panels))
-j = 1
-do i = 1,totalpanels
-  if ( panelflag(i) == 1 ) then
-    masterpanelno(j) = i
-    j = j + 1
-  end if
-enddo
 !-------------------------------------------------------------------------------
 !--------------- Sorting all the data with respect to x ------------------------
 

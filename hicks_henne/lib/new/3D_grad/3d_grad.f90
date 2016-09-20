@@ -9,7 +9,7 @@ program param
   type(intreal), dimension(:), allocatable :: panelgeoinput, panelgeoinputu, panelgeoinputl, uleft, uright, lleft, lright
 
   integer, parameter :: t_b = 4
-  real(kind = 8), parameter :: pi = acos(-1.), gamma = 10.
+  real(kind = 8), parameter :: pi = acos(-1.), gamma = 0.
   character(256) :: input, cmd, geo, fixnod, code, adjoint, gradtitle
   integer :: flagupper, flaglower, pos, nodu, nodl,  i, j, k, l, ierr, counterstart, counterend, counter, totnodes
   integer :: nx, nl, totalpanels, pair(2), panels, ndp, leftbound, rightbound, flag, dummy
@@ -108,10 +108,10 @@ open(1,file=geo,status='old',iostat=ierr)
 do while (ierr.eq.0)
   read(1,'(A)',iostat=ierr) input
   counter = counter + 1
-  if ( trim(input) == ' COORDINATES' ) then
+  if ( trim(input) == 'COORDINATES' ) then
     counterstart = counter + 1
   end if
-  if ( trim(input) == ' END_COORDINATES' ) then
+  if ( trim(input) == 'END_COORDINATES' ) then
     counterend = counter - 1
   end if
 enddo
@@ -146,55 +146,22 @@ open(1,file = 'panel_data.dat')
 read(1,'(a)') input
 input = trim(input)
 pos = index(input,":")
+read(input(pos+1:), *) totalpanels
+read(1,'(a)') input
+input = trim(input)
+pos = index(input,":")
 read(input(pos+1:), *) panels
 read(1,'(a)') input
+
 allocate(zpos(panels))
-do i = 1,panels
-  read(1,*) zpos(i)
-enddo
-close(1)
-
-open(1,file = 'dumpallu.txt', iostat=ierr)
-counter = 0
-do while (ierr .eq. 0)
-  read(1,*,iostat=ierr) geoinput
-  if ( geoinput%floats(3) == zpos(1) ) then
-    counter = counter + 1
-  end if
-enddo
-close(1)
-nx = counter
-totalpanels = nodu/nx
-open(1,file = 'dumpalll.txt', iostat=ierr)
-counter = 0
-do while (ierr .eq. 0)
-  read(1,*,iostat=ierr) geoinput
-  if ( geoinput%floats(3) == zpos(1) ) then
-    counter = counter + 1
-  end if
-enddo
-close(1)
-nl = counter
-
-do i = 1,panels
-  do j = 1,panels
-    if ( i == j ) then
-    else
-      if ( zpos(j) .gt. zpos(i) ) then
-        buffer = zpos(i)
-        zpos(i) = zpos(j)
-        zpos(j) = buffer
-      end if
-    end if
-  enddo
-enddo
-
-!-------------------------------------------------------------------------------
-!---------------- Extracting data ----------------------------------------------
-
+allocate(masterpanelno(panels))
 allocate(zpanelpos(totalpanels))
 allocate(panelflag(totalpanels))
 
+do i = 1,panels
+  read(1,*) masterpanelno(i)
+enddo
+close(1)
 
 open(1,file = 'dumpallu.txt', iostat=ierr)
 read(1,*,iostat=ierr) geoinput
@@ -228,6 +195,37 @@ do i = 1,totalpanels
     end if
   enddo
 enddo
+
+panelflag = 0
+do k = 1,panels
+  zpos(k) = zpanelpos(masterpanelno(k))
+  panelflag(masterpanelno(k)) = 1
+enddo
+
+open(1,file = 'dumpallu.txt', iostat=ierr)
+counter = 0
+do while (ierr .eq. 0)
+  read(1,*,iostat=ierr) geoinput
+  if ( geoinput%floats(3) == zpos(1) ) then
+    counter = counter + 1
+  end if
+enddo
+close(1)
+nx = counter
+open(1,file = 'dumpalll.txt', iostat=ierr)
+counter = 0
+do while (ierr .eq. 0)
+  read(1,*,iostat=ierr) geoinput
+  if ( geoinput%floats(3) == zpos(1) ) then
+    counter = counter + 1
+  end if
+enddo
+close(1)
+nl = counter
+
+
+!-------------------------------------------------------------------------------
+!---------------- Extracting data ----------------------------------------------
 
 
 open(1,file = 'dumpallu.txt', iostat=ierr)
@@ -276,26 +274,6 @@ close(2)
 
 call system('rm dumpallu.txt')
 call system('rm dumpalll.txt')
-
-
-
-do i = 1,totalpanels
-  panelflag(i) = 0
-  do j = 1,panels
-    if ( zpanelpos(i) == zpos(j) ) then
-      panelflag(i) = 1
-    end if
-  enddo
-enddo
-
-allocate(masterpanelno(panels))
-j = 1
-do i = 1,totalpanels
-  if ( panelflag(i) == 1 ) then
-    masterpanelno(j) = i
-    j = j + 1
-  end if
-enddo
 
 
 !-------------------------------------------------------------------------------
@@ -990,7 +968,7 @@ do i = masterpanelno(panels)+1,totalpanels
   do k = 1,nx
     read(1,*) geoinput
     derivative = 0.
-    derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(panels)-1))/(zpanelpos(masterpanelno(panels)) - zpanelpos(masterpanelno(panels)-1)))
+    derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(panels-1)))/(zpanelpos(masterpanelno(panels)) - zpanelpos(masterpanelno(panels-1))))
     write(3,*) geoinput%ints(1), derivative
   enddo
 enddo
@@ -1049,7 +1027,7 @@ do i = masterpanelno(panels)+1,totalpanels
   do k = 1,nl
     read(1,*) geoinput
     derivative = 0.
-    derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(panels)-1))/(zpanelpos(masterpanelno(panels)) - zpanelpos(masterpanelno(panels)-1)))
+    derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(panels-1)))/(zpanelpos(masterpanelno(panels)) - zpanelpos(masterpanelno(panels-1))))
     write(3,*) geoinput%ints(1), derivative
   enddo
 enddo
@@ -1181,7 +1159,7 @@ do i = 1,panels*2*ndp
     end if
     sum = sum + derivative(i)
   enddo
-  write(2,*)i,sum + gamma*(volumeold-0.5)*volumegrad(i)
+  write(2,*)sum + gamma*(volumeold-0.5)*volumegrad(i)
   rewind(1)
 enddo
 write(2,*) 'END'
@@ -1198,26 +1176,24 @@ write(1,*)buffer + (gamma*0.5*(volumeold-0.5)**2)
 
 !-------------------------------------------------------------------------------
 !-------------------------------------------------------------------------------
-print *,(volumenew-volumeold)/1e-8
-print *,volumegrad(9)
-do k = 1,totalpanels
-  print *,areagrad(k,:)
-enddo
+print *,(volumenew-volumeold)/1e-8,' finite difference'
+print *,volumegrad(33),' analytical'
 
-!call system('rm dumpallu.txt')
-!call system('rm dumpalll.txt')
-!call system('rm gradu.txt')
-!call system('rm gradl.txt')
-!call system('rm gradallu.txt')
-!call system('rm gradalll.txt')
-!call system('rm afterdottingwithlambda.txt')
-!call system('rm allgrad.txt')
-!call system('rm baseline.txt')
-!call system('rm new.txt')
-!call system('rm extrapolatedu.txt')
-!call system('rm extrapolatedl.txt')
-!call system('rm extrapolatedgradu.txt')
-!call system('rm extrapolatedgradl.txt')
+
+call system('rm dumpallu.txt')
+call system('rm dumpalll.txt')
+call system('rm gradu.txt')
+call system('rm gradl.txt')
+call system('rm gradallu.txt')
+call system('rm gradalll.txt')
+call system('rm afterdottingwithlambda.txt')
+call system('rm allgrad.txt')
+call system('rm baseline.txt')
+call system('rm new.txt')
+call system('rm extrapolatedu.txt')
+call system('rm extrapolatedl.txt')
+call system('rm extrapolatedgradu.txt')
+call system('rm extrapolatedgradl.txt')
 
 
 
