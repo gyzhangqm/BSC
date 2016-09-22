@@ -619,6 +619,9 @@ do i = 1,masterpanelno(1)-1
     read(1,*) geoinput
     buffer = uleft(k)%floats(2) + (((uright(k)%floats(2)-uleft(k)%floats(2))/(uright(k)%floats(3)-uleft(k)%floats(3)))*(geoinput%floats(3) - uleft(k)%floats(3)))
     write(3,*) geoinput%ints(1), geoinput%floats(1), buffer, geoinput%floats(3)
+    !if ( i == 4 .and. k == 32 ) then
+    !  print *,((buffer - geoinput%floats(2))/1e-8), ' ((buffer - geoinput%floats(2))/1e-8)'
+    !end if
   enddo
 enddo
 rewind(2)
@@ -941,6 +944,9 @@ do i = 1,masterpanelno(1)-1
     derivative = 0.
     derivative = graddataleft(k,:) + (graddataright(k,:) - graddataleft(k,:))*((geoinput%floats(3) - zpanelpos(masterpanelno(1)))/(zpanelpos(masterpanelno(2)) - zpanelpos(masterpanelno(1))))
     write(3,*) geoinput%ints(1), derivative
+    !if ( i == 4 .and. k == 32 ) then
+    !  print *,derivative(1),'derivative(1)'
+    !end if
   enddo
 enddo
 
@@ -1176,8 +1182,8 @@ write(1,*)buffer + (gamma*0.5*(volumeold-0.5)**2)
 
 !-------------------------------------------------------------------------------
 !-------------------------------------------------------------------------------
-print *,(volumenew-volumeold)/1e-8,' finite difference'
-print *,volumegrad(33),' analytical'
+!print *,(volumenew-volumeold)/1e-8,' finite difference'
+!print *,volumegrad(11),' analytical'
 
 
 call system('rm dumpallu.txt')
