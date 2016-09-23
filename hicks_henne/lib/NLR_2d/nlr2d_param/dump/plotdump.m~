@@ -15,8 +15,8 @@ y = baseline(:,3);
 
 
 
-scatter(x,y,'b.','DisplayName','Baseline Configuration');
+scatter(x,y,'b.','DisplayName','sin(x)');
 hold on
 axis equal tight;
-scatter(xnew,ynew,'r.','DisplayName','Optimized Configuration');
-[h, ~] = legend('show');
+scatter(xnew,ynew,'r.');
+legend('Baseline Configuration','Optimised Configuration')
