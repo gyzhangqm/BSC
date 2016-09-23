@@ -14,18 +14,8 @@ x = baseline(:,2);
 y = baseline(:,3);
 
 
-figure(1)
+
 scatter(x,y,'b.');
+hold on
 axis equal tight;
-
-xlabel('x\rightarrow');
-ylabel('y\rightarrow');
-zlabel('z\rightarrow');
-
-figure(2)
-scatter(xnew,ynew,'b.');
-axis equal tight;
-
-xlabel('x\rightarrow');
-ylabel('y\rightarrow');
-zlabel('z\rightarrow');
+scatter(xnew,ynew,'r.');

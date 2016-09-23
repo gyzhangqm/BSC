@@ -150,6 +150,7 @@ close(3)
 close(4)
 totnodes = counterend - counterstart +1
 
+
 !-------------------------------------------------------------------------------
 !---------- Sorting data wrt x -------------------------------------------------
 
@@ -163,10 +164,10 @@ do i = 1,nodu
   do j = 1,nodu
     if ( i == j ) then
     else
-      if ( panelgeoinput(l)%floats(1) .lt. panelgeoinput(k)%floats(1) ) then
-        temp = panelgeoinput(l)
-        panelgeoinput(l) = panelgeoinput(k)
-        panelgeoinput(k) = temp
+      if ( panelgeoinput(i)%floats(1) .lt. panelgeoinput(j)%floats(1) ) then
+        temp = panelgeoinput(i)
+        panelgeoinput(i) = panelgeoinput(j)
+        panelgeoinput(j) = temp
       end if
     end if
   enddo
@@ -187,10 +188,10 @@ do i = 1,nodl
   do j = 1,nodl
     if ( i == j ) then
     else
-      if ( panelgeoinput(l)%floats(1) .gt. panelgeoinput(k)%floats(1) ) then
-        temp = panelgeoinput(l)
-        panelgeoinput(l) = panelgeoinput(k)
-        panelgeoinput(k) = temp
+      if ( panelgeoinput(i)%floats(1) .gt. panelgeoinput(j)%floats(1) ) then
+        temp = panelgeoinput(i)
+        panelgeoinput(i) = panelgeoinput(j)
+        panelgeoinput(j) = temp
       end if
     end if
   enddo
@@ -427,8 +428,8 @@ call system('rm dumpflap.txt')
 call system('rm dumpupdatedu.txt')
 call system('rm dumpupdatedl.txt')
 call system('rm dumpupdatedflap.txt')
-call system('rm baseline.txt')
-call system('rm new.txt')
+!call system('rm baseline.txt')
+!call system('rm new.txt')
 
 
 end program param

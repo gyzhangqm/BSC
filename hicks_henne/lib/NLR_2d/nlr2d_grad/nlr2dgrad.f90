@@ -167,10 +167,10 @@ do i = 1,nodu
   do j = 1,nodu
     if ( i == j ) then
     else
-      if ( panelgeoinput(l)%floats(1) .lt. panelgeoinput(k)%floats(1) ) then
-        temp = panelgeoinput(l)
-        panelgeoinput(l) = panelgeoinput(k)
-        panelgeoinput(k) = temp
+      if ( panelgeoinput(i)%floats(1) .lt. panelgeoinput(j)%floats(1) ) then
+        temp = panelgeoinput(i)
+        panelgeoinput(i) = panelgeoinput(j)
+        panelgeoinput(j) = temp
       end if
     end if
   enddo
@@ -191,10 +191,10 @@ do i = 1,nodl
   do j = 1,nodl
     if ( i == j ) then
     else
-      if ( panelgeoinput(l)%floats(1) .gt. panelgeoinput(k)%floats(1) ) then
-        temp = panelgeoinput(l)
-        panelgeoinput(l) = panelgeoinput(k)
-        panelgeoinput(k) = temp
+      if ( panelgeoinput(i)%floats(1) .gt. panelgeoinput(j)%floats(1) ) then
+        temp = panelgeoinput(i)
+        panelgeoinput(i) = panelgeoinput(j)
+        panelgeoinput(j) = temp
       end if
     end if
   enddo
@@ -617,6 +617,8 @@ write(2,*)buffer
 write(2,*)areaold
 rewind(1)
 write(1,*)buffer + (gamma*0.5*(areaold-0.5)**2)
+
+print *,areaold,'areaold'
 
 !-------------------------------------------------------------------------------
 
