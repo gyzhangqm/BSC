@@ -20,7 +20,7 @@ program param
   integer, dimension(:), allocatable :: unodes, lnodes, flagpanel
   character(256) :: input, cmd, geo, fixnod, code, adjoint, gradtitle
   real, dimension(:), allocatable :: temp, des_varsu, des_varsl, y_pos, bump_pos, func(:,:), spanwise, chordwise,lambda(:,:), dotlambda(:,:), gradient
-  real(kind = 8) :: rootchord, tipchord, rooty, tipy, rootlex, roottex, tiplex, tiptex, pairreal(2), m, xtrans, scale, sum, x ,y
+  real(kind = 8) :: rootchord, tipchord, rooty, tipy, rootlex, roottex, tiplex, tiptex, pairreal(2), m, xtrans, scale, sum, x ,y, buffer
 
   call get_command_argument(1, cmd)
   geo = trim(cmd)//".geo.dat"
@@ -395,6 +395,16 @@ do i = 1,2*(bumps)*panels
 enddo
 write(1,*) 'END'
 
+open(1,file = 'functional_all.dat')
+open(2,file = 'functional.dat')
+read(2,*) buffer
+write(1,*) buffer
+read(2,*) buffer
+write(1,*) buffer
+read(2,*) buffer
+write(1,*) buffer
+rewind(2)
+write(2,*) buffer
 
 !do i = 1,nodu
 !  print *,'-------'
