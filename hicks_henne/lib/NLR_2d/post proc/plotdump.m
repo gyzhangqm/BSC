@@ -15,7 +15,7 @@ y = baseline(:,3);
 
 
 
-scatter(x,y,'bo','DisplayName','Baseline Configuration');
+scatter(x,y,'b.','DisplayName','Baseline Configuration');
 %scatter(x,y,'b.');
 hold on
 %axis equal tight;

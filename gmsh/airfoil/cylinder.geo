@@ -22,7 +22,7 @@ Line Loop(12) = {2, 3, 4, 1};
 Line Loop(13) = {8, 9, 10, 11};
 Plane Surface(14) = {12, 13};
 
-Characteristic Length {4, 3, 2, 5, 8, 7, 6, 9} = 0.1;
+Characteristic Length {4, 3, 2, 5, 8, 7, 6, 9} = 0.001;
 Characteristic Length {6, 9} = 0.5;
 Characteristic Length {7, 8} = 0.5;
 

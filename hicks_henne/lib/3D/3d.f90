@@ -732,8 +732,8 @@ close(1)
 close(2)
 close(3)
 
-call system('rm baseline.txt')
-call system('rm new.txt')
+!call system('rm baseline.txt')
+!call system('rm new.txt')
 
 
 

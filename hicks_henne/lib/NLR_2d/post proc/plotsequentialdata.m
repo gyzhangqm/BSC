@@ -36,7 +36,8 @@ plot(x,dp9,'o-');
 plot(x,dp10,'o-');
 plot(x,dp11,'o-');
 plot(x,dp12,'o-');
-legend('var1','var2','var3','var4','var5','var6','var7','var8','var9','var10','var11','var12');
+plot(x,dp13,'o-');
+legend('var1','var2','var3','var4','var5','var6','var7','var8','var9','var10','var11','var12','var13');
 
 axis([1,25,-0.02,0.0125]);
 xlabel('Iterations \rightarrow','FontSize',24,'FontWeight','bold','Color','k');

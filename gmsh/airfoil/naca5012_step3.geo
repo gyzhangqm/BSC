@@ -66,7 +66,7 @@ Spline(5000) = {1000:1046,1000};
 // is a bit rough but it is good enough to be going on with
 
 // Now add in points to max a box.
-edge_lc = 0.2;
+edge_lc = 0.1;
 
 Point(1100) = { 5, 4, 0,0.0, edge_lc};
 Point(1101) = { 5, -4, 0,0.0, edge_lc};

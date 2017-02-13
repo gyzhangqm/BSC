@@ -21,9 +21,9 @@ axis equal tight;
 xlabel('x\rightarrow');
 ylabel('y\rightarrow');
 zlabel('z\rightarrow');
-
+hold on;
 figure(2)
-scatter3(xnew,ynew,znew,'b.');
+scatter3(xnew,ynew,znew,'r.');
 axis equal tight;
 
 xlabel('x\rightarrow');

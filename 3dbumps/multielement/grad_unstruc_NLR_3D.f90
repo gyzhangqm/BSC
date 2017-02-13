@@ -479,8 +479,12 @@ do i = 1,nodl
 enddo
 do i = 1,nodf
   do j = 1,(2*bumps*panels)+3
-    dotlambda(nodu+nodl+i,j) = gradfx(i)%floats(j)*lambda(datal(i)%ints(1),1) + 0.*lambda(datal(i)%ints(1),2) + gradfz(i)%floats(j)*lambda(datal(i)%ints(1),3)
+    dotlambda(nodu+nodl+i,j) = gradfx(i)%floats(j)*lambda(dataf(i)%ints(1),1) + 0.*lambda(dataf(i)%ints(1),2) + gradfz(i)%floats(j)*lambda(dataf(i)%ints(1),3)
   enddo
+  print *,'-------'
+  print *,dataf(i)%ints(1),'node no',lambda(dataf(i)%ints(1),1),'sens x', (datafnew(i)%floats(1)-dataf(i)%floats(1)),'disp x', gradfx(i)%floats(63), 'grad x'
+  print *,dataf(i)%ints(1),'node no',lambda(dataf(i)%ints(1),3),'sens z', (datafnew(i)%floats(3)-dataf(i)%floats(3)),'disp z', gradfz(i)%floats(63), 'grad z'
+  print *,'-------'
 enddo
 
 allocate(gradient((2*bumps*ndp)+3))
@@ -504,15 +508,20 @@ open(2,file = 'functional.dat')
 read(2,*) buffer
 write(1,*) buffer
 
-
-do i = 1,nodf
-  print *,'-------'
-  print *,(datafnew(i)%floats(3)-dataf(i)%floats(3))/1e-8, 'finite difference z'
-  print *,gradfz(i)%floats(63), 'analytical z'
-  print *,(datafnew(i)%floats(1)-dataf(i)%floats(1))/1e-8, 'finite difference x'
-  print *,gradfx(i)%floats(63), 'analytical x'
-  print *,'-------'
-enddo
+print *,nodf,'nodf'
+!print *,totnodes,'totnodes'
+!do i = 1,nodf
+  !print *,'-------'
+  !print *,(datafnew(i)%floats(3)-dataf(i)%floats(3))/1e-8, 'finite difference z'
+  !print *,gradfz(i)%floats(63), 'analytical z'
+  !print *,(datafnew(i)%floats(1)-dataf(i)%floats(1))/1e-8, 'finite difference x'
+  !print *,gradfx(i)%floats(63), 'analytical x'
+  !print *,'-------'
+  !print *,'-------'
+  !print *,dataf(i)%ints(1),'node no',lambda(dataf(i)%ints(1),1),'sens x', (datafnew(i)%floats(1)-dataf(i)%floats(1)),'disp x', gradfx(i)%floats(63), 'grad x'
+  !print *,dataf(i)%ints(1),'node no',lambda(dataf(i)%ints(1),3),'sens z', (datafnew(i)%floats(3)-dataf(i)%floats(3)),'disp z', gradfz(i)%floats(63), 'grad z'
+  !print *,'-------'
+!enddo
 
 !do i = 1,nodu
 !  print *,'-------'

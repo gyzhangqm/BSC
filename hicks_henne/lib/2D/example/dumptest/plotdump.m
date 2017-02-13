@@ -13,11 +13,13 @@ ybase = dumpbase(:,2);
 ynew = dumpnew(:,2);
 
 figure(1)
-hold on;
+
+scatter(xbase,ybase,'bo','DisplayName','Baseline Configuration');
+%scatter(x,y,'b.');
+hold on
 axis equal tight;
-for i = 1:n
-    scatter(xbase(i),ybase(i),'r');
-end
-for i = 1:n
-    scatter(xnew(i),ynew(i),'b');
-end
+scatter(xnew,ynew,'ro','DisplayName','Modified Configuration');
+%scatter(xnew,ynew,'r.');
+[h, ~] = legend('show');
+xlabel('x\rightarrow');
+ylabel('y\rightarrow');
